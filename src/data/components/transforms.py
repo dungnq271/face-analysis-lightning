@@ -3,9 +3,7 @@ from albumentations.pytorch import ToTensorV2 as ToTensor
 
 
 def get_img_trans(phase, image_size=256):
-    normalize = A.Normalize(
-        mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
-    )
+    normalize = A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
     if phase == "train":
         return A.Compose(
             [

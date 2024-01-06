@@ -72,7 +72,9 @@ class FashionDataModule(LightningDataModule):
                 raise RuntimeError(
                     f"Batch size ({self.hparams.batch_size}) is not divisible by the number of devices ({self.trainer.world_size})."
                 )
-            self.batch_size_per_device = self.hparams.batch_size // self.trainer.world_size
+            self.batch_size_per_device = (
+                self.hparams.batch_size // self.trainer.world_size
+            )
 
         # load and split datasets only if not loaded already
         if not self.data_train and not self.data_val and not self.data_test:
@@ -80,13 +82,13 @@ class FashionDataModule(LightningDataModule):
                 self.hparams.data_dir,
                 self.hparams.metadata_file,
                 mode="train",
-                transform=True
+                transform=True,
             )
             testset = FashionDataset(
                 self.hparams.data_dir,
                 self.hparams.metadata_file,
                 mode="test",
-                transform=True
+                transform=True,
             )
 
             val_size = int(self.hparams.val_test_split[0] * len(testset))

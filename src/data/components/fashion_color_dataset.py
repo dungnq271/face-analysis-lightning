@@ -18,9 +18,7 @@ class FashionDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        data = pd.read_csv(
-            osp.join(root_dir, metadata_file)
-        )
+        data = pd.read_csv(osp.join(root_dir, metadata_file))
         self.data = data[data["phase"] == mode].reset_index(drop=True)
         self.root_dir = root_dir
         if transform:
@@ -33,8 +31,7 @@ class FashionDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        img_path = osp.join(self.root_dir, "images",
-                                self.data.iloc[idx, 0])
+        img_path = osp.join(self.root_dir, "images", self.data.iloc[idx, 0])
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         label = self.data.iloc[idx, 3]

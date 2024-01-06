@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from .import backbones as B
+from . import backbones as B
 from .utils import *
 
 NAMED_MODEL = get_named_function(B)
@@ -32,6 +32,7 @@ class ColorClassifier(nn.Module):
         """
         x = self.backbone(x)
         return x
+
 
 if __name__ == "__main__":
     _ = SimpleDenseNet()
