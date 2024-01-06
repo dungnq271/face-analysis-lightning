@@ -39,6 +39,3 @@ pre-commit      # hooks for applying linters on commit
 rich            # beautiful text formatting in terminal
 pytest          # tests
 # sh            # for running bash commands in some tests (linux/macos only)
-
-# --------- domain-specific --------- #
-face-alignment
