@@ -1,6 +1,6 @@
 <div align="center">
 
-# Fashion Color Classification
+# Face Analysis PyTorch-Lightning with Hydra
 
 <a href="https://pytorch.org/get-started/locally/"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-ee4c2c?logo=pytorch&logoColor=white"></a>
 <a href="https://pytorchlightning.ai/"><img alt="Lightning" src="https://img.shields.io/badge/-Lightning-792ee5?logo=pytorchlightning&logoColor=white"></a>
@@ -13,7 +13,7 @@
 
 ## Description
 
-Training fashion garments' color classification model
+Training face analysis model
 
 ## Installation
 
@@ -21,12 +21,12 @@ Training fashion garments' color classification model
 
 ```bash
 # clone project
-git clone https://github.com/dungnq271/fashion-color.git
-cd fashion-color
+git clone https://github.com/dungnq271/face-analysis-lightning.git
+cd face-analysis-lightning
 
 # [OPTIONAL] create conda environment
-conda create -n fcolor python=3.11
-conda activate fcolor
+conda create -n face python=3.11
+conda activate face
 
 # install pytorch according to instructions
 # https://pytorch.org/get-started/
@@ -39,14 +39,14 @@ pip install -r requirements.txt
 
 ```bash
 # clone project
-git clone https://github.com/dungnq271/fashion-color.git
-cd fashion-color
+git clone https://github.com/dungnq271/face-analysis-lightning.git
+cd face-analysis-lightning
 
 # create conda environment and install dependencies
-conda env create -f environment.yaml -n fcolor
+conda env create -f environment.yaml -n face
 
 # activate conda environment
-conda activate fcolor
+conda activate face
 ```
 
 ## How to run
