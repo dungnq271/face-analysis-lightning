@@ -36,6 +36,6 @@ landmarks = fa.get_landmarks_from_image(
     detected_faces=[[0, 0, img.shape[1], img.shape[0]]],
     return_landmark_score=True,
 )
-
+landmarks
 
 # %%
