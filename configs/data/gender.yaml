@@ -1,6 +1,6 @@
 _target_: src.data.lmdb_datamodule.LMDBDataModule
-lmdb_train_path: /media/gnort/HDD5/Study/face-analysis-lightning/dataset/face/lmdb/age/pixta_gender_train.lmdb
-lmdb_test_path: /media/gnort/HDD5/Study/face-analysis-lightning/dataset/face/lmdb/age/pixta_gender_test.lmdb
+lmdb_train_path: /media/gnort/HDD5/Study/face-analysis-lightning/dataset/face/lmdb/gender/pixta_gender_train.lmdb
+lmdb_test_path: /media/gnort/HDD5/Study/face-analysis-lightning/dataset/face/lmdb/gender/pixta_gender_test.lmdb
 batch_size: 32 # Needs to be divisible by the number of devices (e.g., if in a distributed setup)
 val_test_split: [0.5, 0.5]
 num_workers: 8

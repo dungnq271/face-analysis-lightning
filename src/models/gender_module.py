@@ -6,7 +6,7 @@ from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 
 
-class FaceLitModule(LightningModule):
+class GenderLitModule(LightningModule):
     """`LightningModule` for Face Color classification."""
 
     def __init__(
@@ -34,9 +34,9 @@ class FaceLitModule(LightningModule):
         # loss function
         self.criterion = torch.nn.BCELoss()
         # metric objects for calculating and averaging accuracy across batches
-        self.train_acc = Accuracy(task="binary", num_classes=num_classes)
-        self.val_acc = Accuracy(task="binary", num_classes=num_classes)
-        self.test_acc = Accuracy(task="binary", num_classes=num_classes)
+        self.train_acc = Accuracy(task="binary")
+        self.val_acc = Accuracy(task="binary")
+        self.test_acc = Accuracy(task="binary")
 
         # for averaging loss across batches
         self.train_loss = MeanMetric()
@@ -67,7 +67,8 @@ class FaceLitModule(LightningModule):
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Perform a single model step on a batch of data.
 
-        :param batch: A batch of data (a tuple) containing the input tensor of images and target labels.
+        :param batch: A batch of data (a tuple) containing the input tensor of 
+                        images and target labels.
 
         :return: A tuple containing (in order):
             - A tensor of losses.
@@ -75,19 +76,20 @@ class FaceLitModule(LightningModule):
             - A tensor of target labels.
         """
         x, y = batch
-        breakpoint()
+        y = y.float().unsqueeze(1)
         logits = self.forward(x)
+        # breakpoint()
         loss = self.criterion(logits, y)
-        preds = torch.argmax(logits, dim=1)
-        return loss, preds, y
+        return loss, logits, y
 
     def training_step(
         self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
-        """Perform a single training step on a batch of data from the training set.
+        """Perform a single training step on a batch of data from the training
+            set.
 
-        :param batch: A batch of data (a tuple) containing the input tensor of images and target
-            labels.
+        :param batch: A batch of data (a tuple) containing the input tensor of
+                        images and target labels.
         :param batch_idx: The index of the current batch.
         :return: A tensor of losses between model predictions and targets.
         """
@@ -97,10 +99,18 @@ class FaceLitModule(LightningModule):
         self.train_loss(loss)
         self.train_acc(preds, targets)
         self.log(
-            "train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True
+            "train/loss",
+            self.train_loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True
         )
         self.log(
-            "train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=True
+            "train/acc",
+            self.train_acc,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True
         )
 
         # return loss or backpropagation will fail
@@ -124,8 +134,16 @@ class FaceLitModule(LightningModule):
         # update and log metrics
         self.val_loss(loss)
         self.val_acc(preds, targets)
-        self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val/loss",
+                 self.val_loss,
+                 on_step=False,
+                 on_epoch=True,
+                 prog_bar=True)
+        self.log("val/acc",
+                 self.val_acc,
+                 on_step=False,
+                 on_epoch=True,
+                 prog_bar=True)
 
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
@@ -134,7 +152,10 @@ class FaceLitModule(LightningModule):
         # log `val_acc_best` as a value through `.compute()` method, instead of as a metric object
         # otherwise metric would be reset by lightning after each epoch
         self.log(
-            "val/acc_best", self.val_acc_best.compute(), sync_dist=True, prog_bar=True
+            "val/acc_best",
+            self.val_acc_best.compute(),
+            sync_dist=True,
+            prog_bar=True
         )
 
     def test_step(
@@ -152,9 +173,18 @@ class FaceLitModule(LightningModule):
         self.test_loss(loss)
         self.test_acc(preds, targets)
         self.log(
-            "test/loss", self.test_loss, on_step=False, on_epoch=True, prog_bar=True
-        )
-        self.log("test/acc", self.test_acc, on_step=False, on_epoch=True, prog_bar=True)
+            "test/loss",
+            self.test_loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True
+            )
+        self.log("test/acc",
+                 self.test_acc,
+                 on_step=False,
+                 on_epoch=True,
+                 prog_bar=True
+                 )
 
     def on_test_epoch_end(self) -> None:
         """Lightning hook that is called when a test epoch ends."""
@@ -197,4 +227,4 @@ class FaceLitModule(LightningModule):
 
 
 if __name__ == "__main__":
-    _ = FaceLitModule(None, None, None, None)
+    _ = GenderLitModule(None, None, None, None)

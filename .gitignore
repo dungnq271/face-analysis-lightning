@@ -164,3 +164,4 @@ annotates/*
 !annotates/app.py
 pl-hydra
 dataset
+drawio

@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 
 from torchvision import models
+from torchvision.models.resnet import ResNet50_Weights
 
 LOGGER = logging.getLogger(__name__)
 
@@ -75,7 +76,12 @@ def conv3x3(in_planes, out_planes, stride=1):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, num_group=32, downsample=None):
+    def __init__(self,
+                 inplanes,
+                 planes,
+                 stride=1,
+                 num_group=32,
+                 downsample=None):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.gn1 = nn.GroupNorm(num_group, planes)
@@ -107,15 +113,27 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, num_group=32, downsample=None):
+    def __init__(self,
+                 inplanes,
+                 planes,
+                 stride=1,
+                 num_group=32,
+                 downsample=None
+                 ):
         super(Bottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
+        self.conv1 = nn.Conv2d(inplanes,
+                               planes,
+                               kernel_size=1,
+                               bias=False
+                               )
         self.gn1 = nn.GroupNorm(num_group, planes)
         self.conv2 = nn.Conv2d(
             planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
         )
         self.gn2 = nn.GroupNorm(num_group, planes)
-        self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
+        self.conv3 = nn.Conv2d(
+            planes, planes * 4, kernel_size=1, bias=False
+            )
         self.gn3 = nn.GroupNorm(num_group, planes * 4)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -145,10 +163,21 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers, num_classes=1000, num_group=32, tailed=False):
+    def __init__(self,
+                 block,
+                 layers,
+                 num_classes=1000,
+                 num_group=32,
+                 tailed=False
+                 ):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(3,
+                               64,
+                               kernel_size=7,
+                               stride=2,
+                               padding=3,
+                               bias=False)
         self.gn1 = nn.GroupNorm(num_group, 64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -256,7 +285,7 @@ def resnet18(pretrained=True, **kwargs):
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     if pretrained:
-        state_dict = torch.load("weights/resnet18.pth")
+        state_dict = models.resnet18(pretrained=True).state_dict()
         model.load_pretrained(state_dict)
     return model
 
@@ -268,7 +297,7 @@ def resnet34(pretrained=True, **kwargs):
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        state_dict = torch.load("weights/resnet34.pth")
+        state_dict = models.resnet34(weights='DEFAULT').state_dict()
         model.load_pretrained(state_dict)
     return model
 
@@ -280,7 +309,7 @@ def resnet50(pretrained=True, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        state_dict = torch.load("weights/resnet50.pth")
+        state_dict = models.resnet50(weights='DEFAULT').state_dict()
         model.load_pretrained(state_dict)
     return model
 
@@ -292,7 +321,7 @@ def resnet101(pretrained=True, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
-        state_dict = torch.load("weights/resnet101.pth")
+        state_dict = models.resnet101(weights='DEFAULT').state_dict()
         model.load_pretrained(state_dict)
     return model
 
@@ -304,6 +333,6 @@ def resnet152(pretrained=True, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     if pretrained:
-        state_dict = torch.load("weights/resnet152.pth")
+        state_dict = models.resnet152(weights='DEFAULT').state_dict()
         model.load_pretrained(state_dict)
     return model

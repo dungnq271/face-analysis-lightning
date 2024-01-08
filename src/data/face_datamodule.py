@@ -3,30 +3,33 @@ from typing import Any, Dict, Optional, Tuple
 import torch
 from lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset, random_split
-from .components.lmdb_dataset import LMDB
-from torchvision import transforms
-import numpy as np
+from .components.fashion_color_dataset import FashionDataset
 
 
-class LMDBDataModule(LightningDataModule):
-    """`LightningDataModule` for the LMDB dataset."""
+class FashionDataModule(LightningDataModule):
+    """`LightningDataModule` for the Fashion-Color dataset."""
 
     def __init__(
         self,
-        attrs,
-        lmdb_train_path: str = "dataset/face/lmdb/face_train.lmdb",
-        lmdb_test_path: str = "dataset/face/lmdb/face_test.lmdb",
+        root_dir: str = "data/interim",
+        image_list: str = "fashion_color.csv",
         val_test_split: Tuple[float, float] = (0.5, 0.5),
         batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
+        mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
+        std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
+        image_size: int = 256,
+        crop_size: int = 224
     ) -> None:
+        """Initialize a `FashionDataModule`.
 
-        # if meta_train:
-        #     batch_size = len(self._dataset)
-        # else:
-        #     batch_size = batch_size
-
+        :param data_dir: The data directory. Defaults to `"data/"`.
+        :param train_val_test_split: The train, validation and test split. Defaults to `(55_000, 5_000, 10_000)`.
+        :param batch_size: The batch size. Defaults to `64`.
+        :param num_workers: The number of workers. Defaults to `0`.
+        :param pin_memory: Whether to pin memory. Defaults to `False`.
+        """
         super().__init__()
 
         # this line allows to access init params with 'self.hparams' attribute
@@ -37,39 +40,15 @@ class LMDBDataModule(LightningDataModule):
         self.data_val: Optional[Dataset] = None
         self.data_test: Optional[Dataset] = None
 
-        self.batch_size_per_device = self.hparams.batch_size
-        self.train_transform = transforms.Compose(
-            [
-                transforms.Resize((240, 240)),
-                transforms.RandomHorizontalFlip(0.5),
-                transforms.ToTensor(),
-                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
-            ]
-        )
-        self.test_transform = transforms.Compose(
-            [
-                transforms.Resize((240, 240)),
-                transforms.ToTensor(),
-                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
+        self.batch_size_per_device = batch_size
 
-            ]
-        )
+    @property
+    def num_classes(self) -> int:
+        """Get the number of classes.
 
-        self.target_transform = None
-
-        if self.hparams.attrs == "age":
-            self.target_transform = self.transform_ages_to_one_hot_ordinal
-
-        # self._dataset = LMDB(self.hparams.lmdb_path, transform, target_transform, use_mask)
-        
-    def class_num(self):
-        return self._dataset.classnum
-
-    def transform_ages_to_one_hot_ordinal(self, target, classes):
-        new_target = np.zeros(shape=classes)
-        new_target[:target] = 1
-
-        return new_target.astype("float32")
+        :return: The number of different colors (15).
+        """
+        return 15
 
     def prepare_data(self) -> None:
         """Download data if needed. Lightning ensures that `self.prepare_data()` is called only
@@ -103,17 +82,17 @@ class LMDBDataModule(LightningDataModule):
 
         # load and split datasets only if not loaded already
         if not self.data_train and not self.data_val and not self.data_test:
-            self.data_train = LMDB(
-                self.hparams.lmdb_train_path,
-                transform=self.train_transform,
-                target_transform=self.target_transform,
-                use_mask=False,
+            self.data_train = FashionDataset(
+                self.hparams.data_dir,
+                self.hparams.metadata_file,
+                mode="train",
+                transform=True,
             )
-            testset = LMDB(
-                self.hparams.lmdb_test_path,
-                transform=self.test_transform,
-                target_transform=self.target_transform,
-                use_mask=False,
+            testset = FashionDataset(
+                self.hparams.data_dir,
+                self.hparams.metadata_file,
+                mode="test",
+                transform=True,
             )
 
             val_size = int(self.hparams.val_test_split[0] * len(testset))
@@ -190,4 +169,4 @@ class LMDBDataModule(LightningDataModule):
 
 
 if __name__ == "__main__":
-    _ = LMDBDataModule()
+    _ = FashionDataModule()

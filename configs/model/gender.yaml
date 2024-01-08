@@ -1,4 +1,4 @@
-_target_: src.models.fashion_module.FaceLitModule
+_target_: src.models.gender_module.GenderLitModule
 
 optimizer:
   _target_: torch.optim.Adam

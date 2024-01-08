@@ -7,7 +7,7 @@ import six
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
-from image_utils import blur_image
+from .image_utils import blur_image
 
 
 class LMDB(Dataset):

@@ -2,7 +2,9 @@ import torch
 from torch import nn
 
 from . import backbones as B
-from .utils import *
+from .utils import get_named_function
+import torchvision.models as models
+
 
 NAMED_MODEL = get_named_function(B)
 
@@ -21,8 +23,17 @@ class GenderClassifier(nn.Module):
         :param output_size: The number of output features of the final linear layer.
         """
         super().__init__()
-        self.backbone = NAMED_MODEL[backbone](pretrained=True)
-        self.backbone.fc = nn.Linear(self.backbone.dim, output_size)
+        self.backbone = models.resnet50(weights="DEFAULT")
+        num_filters = self.backbone.fc.in_features
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+        for param in self.backbone.fc.parameters():
+            param.requires_grad = True
+        layers = list(self.backbone.children())[:-1]
+        self.feature_extractor = nn.Sequential(*layers)
+        
+        # use the pretrained model
+        self.classifier = nn.Linear(num_filters, output_size)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -31,7 +42,10 @@ class GenderClassifier(nn.Module):
         :param x: The input tensor.
         :return: A tensor of predictions.
         """
-        x = self.backbone(x)
+        self.feature_extractor.eval()
+        with torch.no_grad():
+            representations = self.feature_extractor(x).flatten(1)
+        x = self.classifier(representations)
         x = self.sigmoid(x)
         return x
 

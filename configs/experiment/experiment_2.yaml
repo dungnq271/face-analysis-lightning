@@ -4,7 +4,7 @@
 # python train.py experiment=example
 
 defaults:
-  - override /data: face
+  - override /data: gender
   - override /model: gender
   - override /callbacks: default
   - override /trainer: gpu
@@ -13,7 +13,7 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["face", "gender_classifier"]
+tags: ["gender", "gender_classifier"]
 
 seed: 12345
 
