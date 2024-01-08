@@ -47,18 +47,23 @@ class FaceDataset(Dataset):
         img_path = osp.join(self.root_dir, self.data[idx][0])
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        label = self.data[1:]
-        age = label[2]
+        label = self.data[idx][1:]
+        target = {"race": label[0],
+                  "gender": label[1],
+                  "age": label[2],
+                  "skintone": label[3],
+                  "emotion": label[4],
+                  "masked": label[5]}
         if self.transform:
             image = self.transform(image=image)["image"]
-        label = self._transform_ages_to_one_hot_ordinal(label,
-                                                        age,
+        label = self._transform_ages_to_one_hot_ordinal(target,
                                                         self.age_classes
                                                         )
         return image, label
 
-    def _transform_ages_to_one_hot_ordinal(self, label, age, age_classes):
-        new_target = np.zeros(shape=age_classes)
-        new_target[:age] = 1
-        label = label[:2] + new_target + label[3:]
-        return label
+    def _transform_ages_to_one_hot_ordinal(self, target, age_classes):
+        age = target["age"]
+        new_age = np.zeros(shape=age_classes)
+        new_age[:age] = 1
+        target["age"] = new_age
+        return target

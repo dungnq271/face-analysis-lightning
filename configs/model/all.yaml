@@ -1,4 +1,4 @@
-_target_: src.models.gender_module.GenderLitModule
+_target_: src.models.face_module.FaceLitModule
 
 optimizer:
   _target_: torch.optim.Adam
@@ -14,11 +14,12 @@ scheduler:
   patience: 10
 
 net:
-  _target_: src.models.components.gender_classifier.GenderClassifier  
+  _target_: src.models.components.face_attrs_classifier.FaceAttrsClassifier  
   backbone: resnet50
-  output_size: 1
 
 # compile model for faster training with pytorch 2.0
 compile: false
 
-num_classes: 10
+num_classes: [4, 2, 6, 4, 7, 2] #race, gender, age, skintone, emotions, masked
+num_heads: 6
+attributes: ["race","gender","age","skintone","emotion","masked"]

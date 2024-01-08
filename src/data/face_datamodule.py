@@ -3,16 +3,17 @@ from typing import Any, Dict, Optional, Tuple
 import torch
 from lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset, random_split
-from .components.fashion_color_dataset import FashionDataset
+from .components.face_dataset import FaceDataset
 
 
-class FashionDataModule(LightningDataModule):
+class FaceDataModule(LightningDataModule):
     """`LightningDataModule` for the Fashion-Color dataset."""
 
     def __init__(
         self,
         root_dir: str = "data/interim",
-        image_list: str = "fashion_color.csv",
+        image_train_list: str = "face.csv",
+        image_test_list: str = "face.csv",
         val_test_split: Tuple[float, float] = (0.5, 0.5),
         batch_size: int = 64,
         num_workers: int = 0,
@@ -82,15 +83,23 @@ class FashionDataModule(LightningDataModule):
 
         # load and split datasets only if not loaded already
         if not self.data_train and not self.data_val and not self.data_test:
-            self.data_train = FashionDataset(
-                self.hparams.data_dir,
-                self.hparams.metadata_file,
+            self.data_train = FaceDataset(
+                self.hparams.root_dir,
+                self.hparams.image_train_list,
+                self.hparams.mean,
+                self.hparams.std,
+                self.hparams.image_size,
+                self.hparams.crop_size,
                 mode="train",
                 transform=True,
             )
-            testset = FashionDataset(
-                self.hparams.data_dir,
-                self.hparams.metadata_file,
+            testset = FaceDataset(
+                self.hparams.root_dir,
+                self.hparams.image_test_list,
+                self.hparams.mean,
+                self.hparams.std,
+                self.hparams.image_size,
+                self.hparams.crop_size,
                 mode="test",
                 transform=True,
             )
@@ -169,4 +178,4 @@ class FashionDataModule(LightningDataModule):
 
 
 if __name__ == "__main__":
-    _ = FashionDataModule()
+    _ = FaceDataModule()
