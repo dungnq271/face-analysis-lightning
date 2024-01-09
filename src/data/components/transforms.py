@@ -27,5 +27,13 @@ def get_img_trans(phase,
                 ToTensor(),
             ]
         )
+    elif phase in ["predict"]:
+        return A.Compose(
+            [
+                A.Resize(image_size, image_size),
+                normalize,
+                ToTensor(),
+            ]
+        )
     else:
         raise KeyError

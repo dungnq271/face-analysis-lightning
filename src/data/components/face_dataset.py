@@ -19,7 +19,8 @@ class FaceDataset(Dataset):
                  image_size,
                  crop_size,
                  mode="train",
-                 transform=None):
+                 transform=None,
+                 predict_mode=False):
         """
         Arguments:
             csv_file (string): Path to the csv file with annotations.
@@ -37,6 +38,7 @@ class FaceDataset(Dataset):
                                            mean=mean,
                                            std=std)
         self.age_classes = 6
+        self.predict_mode = predict_mode
         
     def __len__(self):
         return len(self.data)
@@ -44,18 +46,21 @@ class FaceDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        img_path = osp.join(self.root_dir, self.data[idx][0])
+        img_name = self.data[idx][0]
+        img_path = osp.join(self.root_dir, img_name)
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         label = self.data[idx][1:]
+        if self.transform:
+            image = self.transform(image=image)["image"]
+        if self.predict_mode:
+            return image, img_name
         target = {"race": label[0],
                   "gender": label[1],
                   "age": label[2],
                   "skintone": label[3],
                   "emotion": label[4],
                   "masked": label[5]}
-        if self.transform:
-            image = self.transform(image=image)["image"]
         label = self._transform_ages_to_one_hot_ordinal(target,
                                                         self.age_classes
                                                         )

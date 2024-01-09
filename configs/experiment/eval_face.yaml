@@ -12,7 +12,7 @@ defaults:
 
 task_name: "eval"
 
-tags: ["dev"]
+tags: ["all", "all_classifier"]
 
 # passing checkpoint path is necessary for evaluation
 ckpt_path: "/media/gnort/HDD6/Study/face-analysis-lightning/logs/train/runs/2024-01-09_09-19-55/checkpoints/epoch_022.ckpt"

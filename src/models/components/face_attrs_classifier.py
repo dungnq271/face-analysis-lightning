@@ -45,6 +45,7 @@ class FaceAttrsClassifier(nn.Module):
         self.emotion_classifier = nn.Linear(num_filters, emotion_output_size)
         self.masked_classifier = nn.Linear(num_filters, masked_output_size)
         self.softmax = nn.Softmax(dim=1)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform a single forward pass through the network.
@@ -64,13 +65,13 @@ class FaceAttrsClassifier(nn.Module):
         maksed_pred = self.masked_classifier(representations)
         race_pred = self.softmax(race_pred)
         gender_pred = self.softmax(gender_pred)
-        age_pred = self.softmax(age_pred)
+        age_pred = self.sigmoid(age_pred)
         skintone_pred = self.softmax(skintone_pred)
         emotion_pred = self.softmax(emotion_pred)
         maksed_pred = self.softmax(maksed_pred)
         pred = {"race": race_pred,
                 "gender": gender_pred,
-                "age": age_pred,
+                "age": age_pred.float(),
                 "skintone": skintone_pred,
                 "emotion": emotion_pred,
                 "masked": maksed_pred}
