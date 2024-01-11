@@ -2,12 +2,12 @@ import torch
 from torch import nn
 
 
-class GenderClassifier(nn.Module):
+class EmotionClassifier(nn.Module):
     """A simple fully-connected neural net for computing predictions."""
 
     def __init__(
         self,
-        output_size: int = 2,
+        output_size: int = 6,
     ) -> None:
         """Initialize a `ColorClassifier` module.
 
@@ -32,4 +32,4 @@ class GenderClassifier(nn.Module):
 
 
 if __name__ == "__main__":
-    _ = GenderClassifier()
+    _ = EmotionClassifier()

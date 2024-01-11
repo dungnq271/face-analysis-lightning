@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 
-class GenderClassifier(nn.Module):
+class MaskedClassifier(nn.Module):
     """A simple fully-connected neural net for computing predictions."""
 
     def __init__(
@@ -32,4 +32,4 @@ class GenderClassifier(nn.Module):
 
 
 if __name__ == "__main__":
-    _ = GenderClassifier()
+    _ = MaskedClassifier()

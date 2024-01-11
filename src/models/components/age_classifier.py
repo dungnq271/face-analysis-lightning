@@ -2,12 +2,12 @@ import torch
 from torch import nn
 
 
-class GenderClassifier(nn.Module):
+class AgeClassifier(nn.Module):
     """A simple fully-connected neural net for computing predictions."""
 
     def __init__(
         self,
-        output_size: int = 2,
+        output_size: int = 6,
     ) -> None:
         """Initialize a `ColorClassifier` module.
 
@@ -17,7 +17,7 @@ class GenderClassifier(nn.Module):
         super().__init__()
         self.output_size = output_size
         self.classifier = nn.Linear(2048, self.output_size)
-        self.softmax = nn.Softmax()
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, representation: torch.Tensor) -> torch.Tensor:
         """Perform a single forward pass through the network.
@@ -26,10 +26,11 @@ class GenderClassifier(nn.Module):
         :return: A tensor of predictions.
         """
         # use the pretrained model
+        
         x = self.classifier(representation)
-        x = self.softmax(x)
+        x = self.sigmoid(x)
         return x
 
 
 if __name__ == "__main__":
-    _ = GenderClassifier()
+    _ = AgeClassifier()
