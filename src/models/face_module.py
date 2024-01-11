@@ -133,6 +133,7 @@ class FaceLitModule(LightningModule):
         for i in range(self.hparams.num_heads):
             getattr(self, f"val_acc_{self.attrs[i]}").reset()
             getattr(self, f"val_loss_{self.attrs[i]}").reset()
+
         getattr(self, "val_acc").reset()
         getattr(self, "val_loss").reset()
         getattr(self, "val_acc_best").reset()

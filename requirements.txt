@@ -42,3 +42,4 @@ pytest          # tests
 msgpack
 lmdb
 pyarrow
+timm

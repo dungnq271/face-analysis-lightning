@@ -9,9 +9,14 @@ from torchvision.transforms import Compose
 import rootutils
 import pprint
 
+from tqdm import tqdm
+
 pp = pprint.PrettyPrinter(depth=4)
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-from src.models.face_module import FaceLitModule
+from src.models.face_custom_module import FaceCustomLitModule
+from src.models.components.age_classifier import AgeClassifier
+from src.models.components.gender_classifier import GenderClassifier
+from src.models.components.backbone_maker import BackboneMaker
 from src.data.components.face_dataset import FaceDataset
 from torch.utils.data import DataLoader
 
@@ -28,12 +33,12 @@ def pred2labels():
     gender = {"1": "Male", "0": "Female"}
     skintone = {"3": "mid-light", "1": "light", "2": "mid-dark", "0": "dark"}
     emotion = {
-        "4": "Neutral",
-        "3": "Happiness",
+        "3": "Neutral",
+        "2": "Happiness",
         "0": "Anger",
-        "6": "Surprise",
-        "2": "Fear",
-        "5": "Sadness",
+        "5": "Surprise",
+        "1": "Fear",
+        "4": "Sadness",
     }
     masked = {"1": "unmasked", "0": "masked"}
     age = {
@@ -48,7 +53,7 @@ def pred2labels():
 
 
 def torch2torchscript(input_path, output_path):
-    model = FaceLitModule()
+    model = FaceCustomLitModule()
     checkpoint = torch.load(input_path)
     model.load_state_dict(checkpoint["state_dict"])
     print("Model saved in {}".format(output_path))
@@ -59,9 +64,14 @@ def torch2torchscript(input_path, output_path):
 
 def load_model(ckpt_path):
     checkpoint = torch.load(ckpt_path)
+    state_dict = checkpoint["state_dict"].keys()
     hyper_parameters = checkpoint["hyper_parameters"]
-    print("Hyper parameters keys: {}".format(hyper_parameters.keys()))
-    model = FaceLitModule.load_from_checkpoint(ckpt_path)
+    # print("Hyper parameters keys: {}".format(hyper_parameters.keys()))
+    # pp.pprint(state_dict)
+    # pp.pprint(hyper_parameters)
+    head = AgeClassifier()
+    head.load_state_dict(checkpoint["state_dict"])
+    model = FaceCustomLitModule.load_from_checkpoint(ckpt_path)
     model.to(device)
     model.eval()
     return model
@@ -91,20 +101,19 @@ def posprocess_pred(pred):
 def model_predict_batchs(model, batchs):
     model.freeze()
     preds = {}
-    for i, (input_tensor, img_name) in enumerate(batchs):
+    for i, (input_tensor, img_name) in tqdm(enumerate(batchs)):
         input_tensor = input_tensor.to(device)
         with torch.no_grad():
             pred = model(input_tensor)
         pred = posprocess_pred(pred)
         pred["file_name"] = img_name[0]
         preds[img_name[0]] = pred
-        if i == 9:
-            break
     return preds
 
 
 def model_predict_image(model, image_path):
     model.freeze()
+    image_name = os.path.basename(image_path)
     img = Image.open(image_path)
     img = img.convert("RGB")
     transform = Compose(
@@ -120,7 +129,18 @@ def model_predict_image(model, image_path):
     with torch.no_grad():
         pred = model(img)
     pred = posprocess_pred(pred)
+    pred["file_name"] = image_name
     return pred
+
+
+def model_predict_img_dir(model, img_dir):
+    model.freeze()
+    preds = {}
+    for img_name in tqdm(os.listdir(img_dir)):
+        img_path = os.path.join(img_dir, img_name)
+        pred = model_predict_image(model, img_path)
+        preds[img_name] = pred
+    return preds
 
 
 def load_image_batch_from_dir(root_dir, image_list, mean, std, image_size):
@@ -171,21 +191,32 @@ if __name__ == "__main__":
     parser.add_argument("--root_dir", type=str)
     parser.add_argument("--image_list", type=str)
     parser.add_argument("--image_path", type=str)
+    parser.add_argument("--image_dir", type=str)
+    parser.add_argument("--csv_path", type=str)
     args = parser.parse_args()
     ckpt_path = args.ckpt_path
     root_dir = args.root_dir
     image_list = args.image_list
     image_path = args.image_path
+    image_dir = args.image_dir
+    csv_path = args.csv_path
     model = load_model(ckpt_path)
-    warmup(model)
-    mean = [0.5, 0.5, 0.5]
-    std = [0.5, 0.5, 0.5]
-    image_size = 224
-    if image_path:
-        pred = model_predict_image(model, image_path)
-        pp.pprint(pred)
-    else:
-        batchs = load_image_batch_from_dir(root_dir, image_list, mean, std, image_size)
-        preds = model_predict_batchs(model, batchs)
-        dict2csv(preds, "outputs/answer.csv")
-        pp.pprint(preds)
+    # warmup(model)
+    # mean = [0.5, 0.5, 0.5]
+    # std = [0.5, 0.5, 0.5]
+    # image_size = 224
+    # if image_path:
+    #     pred = model_predict_image(model, image_path)
+    #     pp.pprint(pred)
+    # elif image_dir:
+    #     preds = model_predict_img_dir(model, image_dir)
+    #     dict2csv(preds, csv_path)
+    # else:
+    #     batchs = load_image_batch_from_dir(root_dir,
+    #                                        image_list,
+    #                                        mean, std,
+    #                                        image_size
+    #                                        )
+    #     preds = model_predict_batchs(model, batchs)
+    #     dict2csv(preds, csv_path)
+    #     pp.pprint(preds)
