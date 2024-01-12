@@ -11,7 +11,7 @@ class FaceDataModule(LightningDataModule):
 
     def __init__(
         self,
-        root_dir: str = "data/interim",
+        img_dir: str,
         image_train_list: str = "face.csv",
         image_test_list: str = "face.csv",
         val_test_split: Tuple[float, float] = (0.5, 0.5),
@@ -25,7 +25,7 @@ class FaceDataModule(LightningDataModule):
     ) -> None:
         """Initialize a `FashionDataModule`.
 
-        :param data_dir: The data directory. Defaults to `"data/"`.
+        :param img_dir: The data directory. Defaults to `"data/"`.
         :param train_val_test_split: The train, validation and test split. Defaults to `(55_000, 5_000, 10_000)`.
         :param batch_size: The batch size. Defaults to `64`.
         :param num_workers: The number of workers. Defaults to `0`.
@@ -84,7 +84,7 @@ class FaceDataModule(LightningDataModule):
         # load and split datasets only if not loaded already
         if not self.data_train and not self.data_val and not self.data_test:
             self.data_train = FaceDataset(
-                self.hparams.root_dir,
+                self.hparams.img_dir,
                 self.hparams.image_train_list,
                 self.hparams.mean,
                 self.hparams.std,
@@ -94,7 +94,7 @@ class FaceDataModule(LightningDataModule):
                 transform=True,
             )
             testset = FaceDataset(
-                self.hparams.root_dir,
+                self.hparams.img_dir,
                 self.hparams.image_test_list,
                 self.hparams.mean,
                 self.hparams.std,
