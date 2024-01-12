@@ -12,7 +12,7 @@ class FaceDataset(Dataset):
     """Fashion Color dataset."""
 
     def __init__(self,
-                 root_dir,
+                 img_dir,
                  image_list,
                  mean,
                  std,
@@ -23,19 +23,21 @@ class FaceDataset(Dataset):
         """
         Arguments:
             csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with all the images.
+            img_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
         self.data = pd.read_csv(image_list, delimiter=" ", header=None)
         self.data = np.array(self.data)
-        self.root_dir = root_dir
+        self.img_dir = img_dir
         if transform:
-            self.transform = get_img_trans(mode,
-                                           image_size=image_size,
-                                           crop_size=crop_size,
-                                           mean=mean,
-                                           std=std)
+            self.transform = get_img_trans(
+                mode,
+                image_size=image_size,
+                crop_size=crop_size,
+                mean=mean,
+                std=std
+            )
         self.age_classes = 6
         
     def __len__(self):
@@ -44,7 +46,7 @@ class FaceDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        img_path = osp.join(self.root_dir, self.data[idx][0])
+        img_path = osp.join(self.img_dir, self.data[idx][0])
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         label = self.data[idx][1:]
@@ -56,9 +58,10 @@ class FaceDataset(Dataset):
                   "masked": label[5]}
         if self.transform:
             image = self.transform(image=image)["image"]
-        label = self._transform_ages_to_one_hot_ordinal(target,
-                                                        self.age_classes
-                                                        )
+        label = self._transform_ages_to_one_hot_ordinal(
+            target,
+            self.age_classes
+        )
         return image, label
 
     def _transform_ages_to_one_hot_ordinal(self, target, age_classes):
