@@ -7,7 +7,7 @@ class EmotionClassifier(nn.Module):
 
     def __init__(
         self,
-        output_size: int = 6,
+        output_size: int = 7,
     ) -> None:
         """Initialize a `ColorClassifier` module.
 

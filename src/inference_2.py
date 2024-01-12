@@ -41,7 +41,7 @@ class Predictor:
         self.backbone = BackboneMaker(name=self.backbone_name).to(device)
         self.backbone_checkpoint = os.path.join(self.ckpt_dir,
                                                 "backbone",
-                                                "best_backbone.pth")
+                                                "best.ckpt")
         self.race_head = RaceClassifier()
         self.gender_head = GenderClassifier()
         self.age_head = AgeClassifier()
@@ -60,7 +60,7 @@ class Predictor:
             setattr(self, attr + "_checkpoint", os.path.join(
                 self.ckpt_dir,
                 attr,
-                "best_{}_head.pth".format(attr)))
+                "last.ckpt"))
             getattr(self, attr + "_head").load_state_dict(
                 torch.load(getattr(self, attr + "_checkpoint")))
             getattr(self, attr + "_head").to(device)
@@ -109,6 +109,7 @@ class Predictor:
         emotion = {
             "4": "Neutral",
             "3": "Happiness",
+            "1": "Disgust",
             "0": "Anger",
             "6": "Surprise",
             "2": "Fear",
@@ -210,21 +211,7 @@ class Predictor:
         return model
 
     def dict2csv(self, preds):
-        l = len(preds.keys())
-        col_names = ["file_name",
-                     "race",
-                     "age",
-                     "emotion",
-                     "gender",
-                     "skintone",
-                     "masked"]
-        df = pd.DataFrame(index=range(l),
-                          columns=col_names,
-                          dtype=str)
-        df_2 = pd.DataFrame.from_dict(preds, orient="index")
-        for col in df_2.columns:
-            df[col] = df_2[col]
-        print(df_2.head())
+        df = pd.DataFrame.from_dict(preds, orient="index")
         df.to_csv(self.csv_path, index=False)
         print("Predictions saved in {}".format(self.csv_path))
 
