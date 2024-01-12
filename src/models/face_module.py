@@ -242,7 +242,7 @@ class FaceLitModule(LightningModule):
         # )
         # self.log("test/acc", self.test_acc, on_step=False, on_epoch=True, prog_bar=True)
         for i in range(self.hparams.num_heads):
-            getattr(self, f"test_loss_{self.attrs[i]}")(loss[i])
+            getattr(self, f"test_loss_{self.attrs[i]}")(loss[self.attrs[i]])
             getattr(self, f"test_acc_{self.attrs[i]}")(preds[self.attrs[i]],
                                                        targets[self.attrs[i]])
             self.log(
