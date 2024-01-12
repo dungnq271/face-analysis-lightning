@@ -27,9 +27,31 @@ gender_head:
   _target_: src.models.components.gender_classifier.GenderClassifier
   output_size: 2
 
+race_head:
+  _target_: src.models.components.race_classifier.RaceClassifier
+  output_size: 3
+
+skintone_head:
+  _target_: src.models.components.skintone_classifier.SkintoneClassifier
+  output_size: 4
+
+emotion_head:
+  _target_: src.models.components.emotion_classifier.EmotionClassifier
+  output_size: 7
+
+masked_head:
+  _target_: src.models.components.masked_classifier.MaskedClassifier
+  output_size: 2
+
+criterion:
+  _target_: src.losses.focal_loss.FocalLoss
+  gamma: 2.0
+
+
 # compile model for faster training with pytorch 2.0
 compile: false
 
-num_classes: [2, 6] # [4, 2, 6, 4, 7, 2] race, gender, age, skintone, emotions, masked
-attributes: ["gender","age"] # ["race","gender","age","skintone","emotion","masked"]
+# attributes: [["race", 3], ["gender", "2"], ["age", 6],
+#              ["skintone", 4], ["emotion", 7], ["masked", 2]] 
+attributes: [["race", 3]]
 checkpoint_dir: ${callbacks.model_checkpoint.dirpath}

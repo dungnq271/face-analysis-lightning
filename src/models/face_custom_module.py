@@ -9,6 +9,7 @@ from torchmetrics.classification.auroc import AUROC
 import os
 from os.path import join, exists
 
+
 class FaceCustomLitModule(LightningModule):
     """`LightningModule` for Face Color classification."""
 
@@ -17,11 +18,16 @@ class FaceCustomLitModule(LightningModule):
         backbone: torch.nn.Module,
         age_head: torch.nn.Module,
         gender_head: torch.nn.Module,
+        race_head: torch.nn.Module,
+        skintone_head: torch.nn.Module,
+        emotion_head: torch.nn.Module,
+        masked_head: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         compile: bool,
-        num_classes: Tuple[int, int, int, int, int, int],
-        attributes: Tuple[str, str, str, str, str, str],
+        criterion: torch.nn.Module,
+        # num_classes: Dict[int, int, int, int, int, int],
+        attributes,
         checkpoint_dir: str
     ) -> None:
         """Initialize a `FaceLitModule`.
@@ -35,99 +41,106 @@ class FaceCustomLitModule(LightningModule):
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False)
-        print(self)
         self.checkpoint_dir = checkpoint_dir
         self.backbone = backbone
         self.age_head = age_head
         self.gender_head = gender_head
-        self.attrs = attributes
-        for attr in self.attrs:
+        self.race_head = race_head
+        self.skintone_head = skintone_head
+        self.emotion_head = emotion_head
+        self.masked_head = masked_head
+        self.attrs_arr = attributes
+        self.criterion = criterion
+        self.attrs = {}
+        for attr in self.attrs_arr:
+            self.attrs[attr[0]] = attr[1]
+        for attr in self.attrs.keys():
             if not exists(join(self.checkpoint_dir, attr)):
                 os.makedirs(join(self.checkpoint_dir, attr))
         if not exists(join(self.checkpoint_dir, "backbone")):
             os.makedirs(join(self.checkpoint_dir, "backbone"))
-        self.cur_val = 0
+        self.cur_val = -1
+        # self.val_acc_best = -1
         # loss function
         # metric objects for calculating and averaging accuracy across batches
-        for i, attr in enumerate(self.attrs):
+        for attr in self.attrs.keys():
             if attr != "age":
                 setattr(self,
-                        f"criterion_{self.attrs[i]}",
-                        torch.nn.CrossEntropyLoss())
+                        f"criterion_{attr}",
+                        self.criterion)
                 setattr(self,
-                        f"train_acc_{self.attrs[i]}",
+                        f"train_acc_{attr}",
                         Accuracy(task="multiclass",
-                                 num_classes=num_classes[i]
+                                 num_classes=int(self.attrs[attr])
                                  )
                         )
                 setattr(self,
-                        f"val_acc_{self.attrs[i]}",
+                        f"val_acc_{attr}",
                         Accuracy(task="multiclass",
-                                 num_classes=num_classes[i]
+                                 num_classes=int(self.attrs[attr])
                                  )
                         )
                 setattr(self,
-                        f"test_acc_{self.attrs[i]}",
+                        f"test_acc_{attr}",
                         Accuracy(task="multiclass",
-                                 num_classes=num_classes[i]
+                                 num_classes=int(self.attrs[attr])
                                  )
                         )
                 setattr(self,
-                        f"test_f1_{self.attrs[i]}",
+                        f"test_f1_{attr}",
                         FBetaScore(task="multiclass",
-                                   num_classes=num_classes[i],
+                                   num_classes=int(self.attrs[attr]),
                                    )
                         )
                 setattr(self,
-                        f"test_auroc_{self.attrs[i]}",
+                        f"test_auroc_{attr}",
                         AUROC(task="multiclass",
-                              num_classes=num_classes[i])
+                              num_classes=int(self.attrs[attr]))
                         )
             else:
                 setattr(self,
-                        f"criterion_{self.attrs[i]}",
+                        f"criterion_{attr}",
                         torch.nn.BCELoss())
                 setattr(self,
-                        f"train_acc_{self.attrs[i]}",
+                        f"train_acc_{attr}",
                         Accuracy(task="multilabel",
-                                 num_labels=num_classes[i]
+                                 num_labels=int(self.attrs[attr])
                                  )
                         )
                 setattr(self,
-                        f"val_acc_{self.attrs[i]}",
+                        f"val_acc_{attr}",
                         Accuracy(task="multilabel",
-                                 num_labels=num_classes[i]
+                                 num_labels=int(self.attrs[attr])
                                  )
                         )
                 setattr(self,
-                        f"test_acc_{self.attrs[i]}",
+                        f"test_acc_{attr}",
                         Accuracy(task="multilabel",
-                                 num_labels=num_classes[i]
+                                 num_labels=int(self.attrs[attr])
                                  )
                         )
                 setattr(self,
-                        f"test_f1_{self.attrs[i]}",
+                        f"test_f1_{attr}",
                         FBetaScore(task="multilabel",
-                                   num_labels=num_classes[i],
+                                   num_labels=int(self.attrs[attr]),
                                    )
                         )
                 setattr(self,
-                        f"test_auroc_{self.attrs[i]}",
+                        f"test_auroc_{attr}",
                         AUROC(task="multilabel",
-                              num_labels=num_classes[i]
+                              num_labels=int(self.attrs[attr])
                               )
                         )
 
             # for averaging loss across batches
-            setattr(self, f"train_loss_{self.attrs[i]}", MeanMetric())
-            setattr(self, f"val_loss_{self.attrs[i]}", MeanMetric())
-            setattr(self, f"test_loss_{self.attrs[i]}", MeanMetric())
-
-        setattr(self, "val_acc", MeanMetric())
-        setattr(self, "val_loss", MeanMetric())
+            setattr(self, f"train_loss_{attr}", MeanMetric())
+            setattr(self, f"val_loss_{attr}", MeanMetric())
+            setattr(self, f"test_loss_{attr}", MeanMetric())
+        self.val_acc = MeanMetric()
+        self.val_loss = MeanMetric()
 
         # for tracking best so far validation accuracy
-        setattr(self, "val_acc_best", MaxMetric())
+        self.val_acc_best = MaxMetric()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform a forward pass through the model `self.net`.
@@ -138,12 +151,8 @@ class FaceCustomLitModule(LightningModule):
         pred = {}
         with torch.no_grad():
             representation = self.backbone(x)
-        if "age" in self.attrs:
-            age = self.age_head(representation)
-            pred['age'] = age
-        if "gender" in self.attrs:
-            gender = self.gender_head(representation)
-            pred['gender'] = gender
+        for attr in self.attrs.keys():
+            pred[attr] = getattr(self, f"{attr}_head")(representation)
         return pred
 
     def on_train_start(self) -> None:
@@ -151,11 +160,12 @@ class FaceCustomLitModule(LightningModule):
         # by default lightning executes validation step sanity checks before training starts,
         # so it's worth to make sure validation metrics don't store results from these checks
         for i, attr in enumerate(self.attrs):
-            getattr(self, f"val_acc_{self.attrs[i]}").reset()
-            getattr(self, f"val_loss_{self.attrs[i]}").reset()
-        getattr(self, "val_acc").reset()
-        getattr(self, "val_loss").reset()
-        getattr(self, "val_acc_best").reset()
+            getattr(self, f"val_acc_{attr}").reset()
+            getattr(self, f"val_loss_{attr}").reset()
+
+        self.val_acc.reset()
+        self.val_loss.reset()
+        self.val_acc_best.reset()
 
     def model_step(
         self, batch: Tuple[torch.Tensor, torch.Tensor]
@@ -172,19 +182,20 @@ class FaceCustomLitModule(LightningModule):
         x, y = batch
 
         pred = self.forward(x)
-        pred['age'] = pred['age'].float()
-        y['age'] = y['age'].float()
+        if "age" in self.attrs.keys():
+            pred['age'] = pred['age'].float()
+            y['age'] = y['age'].float()
         losses = {}
-        for i, attr in enumerate(self.attrs):
+        for attr in self.attrs.keys():
             loss = getattr(self,
-                           f"criterion_{self.attrs[i]}")(pred[self.attrs[i]],
-                                                         y[self.attrs[i]])
-            getattr(self,
-                    f"train_loss_{self.attrs[i]}")(loss)
-            getattr(self,
-                    f"train_acc_{self.attrs[i]}")(pred[self.attrs[i]],
-                                                  y[self.attrs[i]])
-            losses[self.attrs[i]] = loss
+                           f"criterion_{attr}")(pred[attr],
+                                                y[attr])
+            # getattr(self,
+            #         f"train_loss_{attr}")(loss)
+            # getattr(self,
+            #         f"train_acc_{attr}")(pred[attr],
+            #                              y[attr])
+            losses[attr] = loss
         return losses, pred, y
 
     def training_step(
@@ -198,28 +209,31 @@ class FaceCustomLitModule(LightningModule):
         :return: A tensor of losses between model predictions and targets.
         """
         losses, preds, targets = self.model_step(batch)
-        for i, attr in enumerate(self.attrs):
-            # getattr(self, f"train_loss_{self.attrs[i]}")(losses[self.attrs[i]])
-            # getattr(self, f"train_acc_{self.attrs[i]}")(preds[self.attrs[i]],
-            #                                             targets[self.attrs[i]])
+        for attr in self.attrs.keys():
+            getattr(self, f"train_loss_{attr}").update(losses[attr])
+            train_acc = getattr(self,
+                                f"train_acc_{attr}")(preds[attr],
+                                                     targets[attr])
             self.log(
-                f"train/loss_{self.attrs[i]}",
-                getattr(self, f"train_loss_{self.attrs[i]}"),
+                f"train/loss_{attr}",
+                getattr(self, f"train_loss_{attr}").compute(),
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
                 )
             self.log(
-                f"train/acc_{self.attrs[i]}",
-                getattr(self, f"train_acc_{self.attrs[i]}"),
+                f"train/acc_{attr}",
+                train_acc,
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
                 )
         # return loss or backpropagation will fail
-        if len(self.attrs) > 1:
-            loss_mean = torch.stack(list(losses.values())).mean()
-        return loss_mean
+        if len(self.attrs.keys()) > 1:
+            losses = torch.stack(list(losses.values())).mean()
+        else:
+            losses = losses[list(losses.keys())[0]]
+        return losses
 
     def on_train_epoch_end(self) -> None:
         "Lightning hook that is called when a training epoch ends."
@@ -235,82 +249,73 @@ class FaceCustomLitModule(LightningModule):
         :param batch_idx: The index of the current batch.
         """
         loss, preds, targets = self.model_step(batch)
-        for i, attr in enumerate(self.attrs):
-            val_loss = getattr(
-                self,
-                f"val_loss_{self.attrs[i]}")(loss[self.attrs[i]])
+        for attr in self.attrs.keys():
+            val_loss = loss[attr]
             val_acc = getattr(
                 self,
-                f"val_acc_{self.attrs[i]}")(preds[self.attrs[i]],
-                                            targets[self.attrs[i]])
-            getattr(self, "val_acc")(val_acc)
-            getattr(self, "val_loss")(val_loss)
+                f"val_acc_{attr}")(preds[attr],
+                                   targets[attr])
+            self.val_acc.update(val_acc)
             self.log(
-                f"val/loss_{self.attrs[i]}",
-                getattr(self, f"val_loss_{self.attrs[i]}"),
+                f"val/loss_{attr}",
+                val_loss,
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
             )
             self.log(
-                f"val/acc_{self.attrs[i]}",
-                getattr(self, f"val_acc_{self.attrs[i]}"),
+                f"val/acc_{attr}",
+                val_acc,
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
             )
-        self.cur_val = getattr(self, "val_acc").compute()
+            self.val_loss.update(val_loss)
         self.log(
             "val/acc",
-            self.cur_val,
+            self.val_acc.compute(),
             sync_dist=True,
             prog_bar=True,
         )
         self.log(
             "val/loss",
-            getattr(self, "val_loss").compute(),
+            self.val_loss.compute(),
             sync_dist=True,
             prog_bar=True,
         )
 
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
-        if self.cur_val >= getattr(self, "val_acc_best").compute():
-            if "age" in self.attrs:
+        self.cur_val = self.val_acc.compute()
+        if self.val_acc >= self.val_acc_best:
+            for attr in self.attrs.keys():
                 torch.save(
-                    self.age_head.state_dict(),
-                    join(self.checkpoint_dir, "age", "best_age_head.pth")
-                    )
-            if "gender" in self.attrs:
-                torch.save(
-                    self.gender_head.state_dict(),
-                    join(self.checkpoint_dir, "gender", "best_gender_head.pth")
+                    getattr(
+                        self,
+                        attr + "_head").state_dict(),
+                    join(self.checkpoint_dir, attr, "best.ckpt")
                     )
             torch.save(
                 self.backbone.state_dict(),
-                join(self.checkpoint_dir, "backbone", "best_backbone.pth")
+                join(self.checkpoint_dir, "backbone", "best.ckpt")
                 )
-        acc_best = self.cur_val
-        getattr(self, "val_acc_best")(acc_best)
+        self.val_acc_best.update(self.cur_val)
         self.log(
             "val/acc_best",
-            getattr(self, "val_acc_best").compute(),
+            self.val_acc_best.compute(),
             sync_dist=True,
             prog_bar=True,
         )
-        if "age" in self.attrs:
+        for attr in self.attrs.keys():
             torch.save(
-                self.age_head.state_dict(),
-                join(self.checkpoint_dir, "age", "last_age_head.pth")
+                getattr(
+                    self,
+                    attr + "_head").state_dict(),
+                join(self.checkpoint_dir, attr, "last.ckpt")
                 )
-        if "gender" in self.attrs:
-            torch.save(
-                self.gender_head.state_dict(),
-                join(self.checkpoint_dir, "gender", "last_gender_head.pth")
-            )
         torch.save(
             self.backbone.state_dict(),
-            join(self.checkpoint_dir, "backbone", "last_backbone.pth")
+            join(self.checkpoint_dir, "backbone", "last.ckpt")
             )
 
     def test_step(
@@ -323,34 +328,34 @@ class FaceCustomLitModule(LightningModule):
         :param batch_idx: The index of the current batch.
         """
         loss, preds, targets = self.model_step(batch)
-        for i, attr in enumerate(self.attrs):
+        for attr in self.attrs.keys():
             # breakpoint()
             getattr(self,
-                    f"test_acc_{self.attrs[i]}")(preds[self.attrs[i]],
-                                                 targets[self.attrs[i]])
+                    f"test_acc_{attr}")(preds[attr],
+                                        targets[attr])
             getattr(self,
-                    f"test_f1_{self.attrs[i]}")(preds[self.attrs[i]],
-                                                targets[self.attrs[i]])
+                    f"test_f1_{attr}")(preds[attr],
+                                       targets[attr])
             getattr(self,
-                    f"test_auroc_{self.attrs[i]}")(preds[self.attrs[i]],
-                                                   targets[self.attrs[i]].long())
+                    f"test_auroc_{attr}")(preds[attr],
+                                          targets[attr].long())
             self.log(
-                f"test/acc_{self.attrs[i]}",
-                getattr(self, f"test_acc_{self.attrs[i]}"),
+                f"test/acc_{attr}",
+                getattr(self, f"test_acc_{attr}"),
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
             )
             self.log(
-                f"test/f1_{self.attrs[i]}",
-                getattr(self, f"test_f1_{self.attrs[i]}"),
+                f"test/f1_{attr}",
+                getattr(self, f"test_f1_{attr}"),
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
             )
             self.log(
-                f"test/auroc_{self.attrs[i]}",
-                getattr(self, f"test_auroc_{self.attrs[i]}"),
+                f"test/auroc_{attr}",
+                getattr(self, f"test_auroc_{attr}"),
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
