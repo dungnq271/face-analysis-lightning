@@ -25,7 +25,9 @@ def test_mnist_datamodule(batch_size: int) -> None:
 
     dm.setup()
     assert dm.data_train and dm.data_val and dm.data_test
-    assert dm.train_dataloader() and dm.val_dataloader() and dm.test_dataloader()
+    assert (
+        dm.train_dataloader() and dm.val_dataloader() and dm.test_dataloader()
+    )
 
     num_datapoints = len(dm.data_train) + len(dm.data_val) + len(dm.data_test)
     assert num_datapoints == 70_000

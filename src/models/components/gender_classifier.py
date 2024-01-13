@@ -31,7 +31,7 @@ class GenderClassifier(nn.Module):
             param.requires_grad = True
         layers = list(self.backbone.children())[:-1]
         self.feature_extractor = nn.Sequential(*layers)
-        
+
         # use the pretrained model
         self.classifier = nn.Linear(num_filters, output_size)
         self.sigmoid = nn.Sigmoid()

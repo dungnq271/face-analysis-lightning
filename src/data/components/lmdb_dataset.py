@@ -11,11 +11,9 @@ from .image_utils import blur_image
 
 
 class LMDB(Dataset):
-    def __init__(self, db_path,
-                 transform=None,
-                 target_transform=None,
-                 use_mask=False
-                 ):
+    def __init__(
+        self, db_path, transform=None, target_transform=None, use_mask=False
+    ):
         self.db_path = db_path
         self.env = lmdb.open(
             db_path,

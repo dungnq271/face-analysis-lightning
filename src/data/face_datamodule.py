@@ -21,7 +21,9 @@ class FaceDataModule(LightningDataModule):
         mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
         std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
         image_size: int = 256,
-        crop_size: int = 224
+        crop_size: int = 224,
+        transform: bool = False,
+        age_to_ordinal: bool = False
     ) -> None:
         """Initialize a `FashionDataModule`.
 
@@ -91,7 +93,8 @@ class FaceDataModule(LightningDataModule):
                 self.hparams.image_size,
                 self.hparams.crop_size,
                 mode="train",
-                transform=True,
+                transform=self.hparams.transform,
+                age_to_ordinal=self.hparams.age_to_ordinal
             )
             testset = FaceDataset(
                 self.hparams.img_dir,
@@ -101,7 +104,8 @@ class FaceDataModule(LightningDataModule):
                 self.hparams.image_size,
                 self.hparams.crop_size,
                 mode="test",
-                transform=True,
+                transform=self.hparams.transform,
+                age_to_ordinal=self.hparams.age_to_ordinal
             )
 
             val_size = int(self.hparams.val_test_split[0] * len(testset))

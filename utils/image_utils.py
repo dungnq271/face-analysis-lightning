@@ -34,7 +34,7 @@ def merge_bisenet_annotations(mask):
 
 # This is used to calculate the blur amount based on a polynomial
 def get_curve(max_blur, val, order=4):
-    val = (1 / (max_blur ** (order - 1))) * (val ** order)
+    val = (1 / (max_blur ** (order - 1))) * (val**order)
     return val
 
 
@@ -50,7 +50,9 @@ def blur_image(img, mask, max_blur=10, curved=True):
     scaled_img = mask / (mask_max / max_blur)
     # Scale image back to range 0 to sigma max so we get correct blur level
 
-    scaled_img = np.around(scaled_img, decimals=1)  # Round to one decimal place
+    scaled_img = np.around(
+        scaled_img, decimals=1
+    )  # Round to one decimal place
     uniq_vals = np.unique(scaled_img)
     for scaled_val in uniq_vals:  # for all possible blur levels
         blur_amount = round(max_blur - scaled_val, 1)
@@ -97,7 +99,8 @@ def blur_image_faster(img, mask, max_blur=5, curved=True):
     # create all blur_levels
     if curved:
         blur_amounts = [
-            get_curve(max_blur, scaled_val, order=4) for scaled_val in uniq_vals
+            get_curve(max_blur, scaled_val, order=4)
+            for scaled_val in uniq_vals
         ]
     else:
         blur_amounts = uniq_vals.copy()
@@ -119,7 +122,9 @@ def blur_image_faster(img, mask, max_blur=5, curved=True):
         scaled_img = np.dstack([scaled_img] * 3)
         qwerty = img.copy()
         for i in range(qwerty.shape[2]):
-            qwerty[..., i] = scipy.ndimage.gaussian_filter(img[..., i], max_blur)
+            qwerty[..., i] = scipy.ndimage.gaussian_filter(
+                img[..., i], max_blur
+            )
 
     # overlay parts of the mask and image accordingly
     blurred_img = img * (1 - scaled_img) + qwerty * scaled_img

@@ -12,7 +12,7 @@ import face_alignment
 sns.set_theme(style="white")
 
 # %%
-data_dir = "../../data/raw" 
+data_dir = "../../data/raw"
 img_dir = osp.join(data_dir, "cropped_faces")
 img_fnames = os.listdir(img_dir)
 
@@ -25,9 +25,7 @@ plt.imshow(img)
 
 # %%
 fa = face_alignment.FaceAlignment(
-    face_alignment.LandmarksType.TWO_D,
-    flip_input=False,
-    device="cuda"
+    face_alignment.LandmarksType.TWO_D, flip_input=False, device="cuda"
 )
 
 # %%

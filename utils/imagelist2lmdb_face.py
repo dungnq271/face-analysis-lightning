@@ -5,6 +5,7 @@ import lmdb
 import msgpack
 import numpy as np
 import pandas as pd
+
 # import pyarrow as pa
 from PIL import Image
 from torch.utils.data import DataLoader
@@ -15,43 +16,43 @@ from image_utils import blur_image_faster
 
 
 class ImageListRaw(ImageFolder):
-    ATTRIBUTES = {"race": 1,
-                  "gender": 2,
-                  "age": 3,
-                  "skintone": 4,
-                  "emotion": 5,
-                  "masked": 6}
-    MAX_CLASS = {"race": 4,
-                 "gender": 1,
-                 "age": 6,
-                 "skintone": 4,
-                 "emotion": 7,
-                 "masked": 1}
+    ATTRIBUTES = {
+        "race": 1,
+        "gender": 2,
+        "age": 3,
+        "skintone": 4,
+        "emotion": 5,
+        "masked": 6,
+    }
+    MAX_CLASS = {
+        "race": 4,
+        "gender": 1,
+        "age": 6,
+        "skintone": 4,
+        "emotion": 7,
+        "masked": 1,
+    }
 
-    def __init__(self,
-                 attribute_name,
-                 source,
-                 mask_source,
-                 image_list,
-                 train=True
-                 ):
+    def __init__(
+        self, attribute_name, source, mask_source, image_list, train=True
+    ):
         self.max_blur = None
         attribute = self.ATTRIBUTES[attribute_name]
         max_class = self.MAX_CLASS[attribute_name]
 
-        image_names = pd.read_csv(image_list,
-                                  delimiter=" ",
-                                  header=None
-                                  )
+        image_names = pd.read_csv(image_list, delimiter=" ", header=None)
         image_names = np.asarray(image_names)
 
         # remove images that have labels outside of desired range
         image_names = image_names[image_names[:, attribute].astype("int") >= 0]
-        image_names = image_names[image_names[:, attribute].astype("int") <= max_class]
+        image_names = image_names[
+            image_names[:, attribute].astype("int") <= max_class
+        ]
 
         if source is not None:
             self.samples = [
-                path.join(source, image_name) for image_name in image_names[:, 0]
+                path.join(source, image_name)
+                for image_name in image_names[:, 0]
             ]
             if mask_source is not None:
                 self.masks = [
@@ -78,7 +79,9 @@ class ImageListRaw(ImageFolder):
             mask = Image.open(self.masks[index])
 
             img = blur_image_faster(
-                np.asarray(img).copy(), np.asarray(mask).copy(), max_blur=self.max_blur
+                np.asarray(img).copy(),
+                np.asarray(mask).copy(),
+                max_blur=self.max_blur,
             )
             img = Image.fromarray(img)
 
@@ -97,10 +100,9 @@ class ImageListRaw(ImageFolder):
 
 class CustomRawLoader(DataLoader):
     def __init__(self, attribute, workers, source, mask_source, image_list):
-        self._dataset = ImageListRaw(attribute,
-                                     source,
-                                     mask_source,
-                                     image_list)
+        self._dataset = ImageListRaw(
+            attribute, source, mask_source, image_list
+        )
 
         super(CustomRawLoader, self).__init__(
             self._dataset, num_workers=workers, collate_fn=lambda x: x
@@ -152,7 +154,8 @@ def list2lmdb(
         for idx, data in tqdm(enumerate(data_loader)):
             image, label = data[0]
             txn.put(
-                "{}".format(idx).encode("ascii"), msgpack.dumps((image, int(label)))
+                "{}".format(idx).encode("ascii"),
+                msgpack.dumps((image, int(label))),
             )
             if idx % write_frequency == 0:
                 print("[%d/%d]" % (idx, len(data_loader)))
@@ -168,7 +171,8 @@ def list2lmdb(
             for _, data in tqdm(enumerate(data_loader)):
                 image, label = data[0]
                 txn.put(
-                    "{}".format(idx).encode("ascii"), msgpack.dumps((image, int(label)))
+                    "{}".format(idx).encode("ascii"),
+                    msgpack.dumps((image, int(label))),
                 )
                 if idx % write_frequency == 0:
                     print("[%d/%d]" % (idx, len(data_loader)))
@@ -182,7 +186,9 @@ def list2lmdb(
     with db.begin(write=True) as txn:
         txn.put(b"__keys__", msgpack.dumps(keys))
         txn.put(b"__len__", msgpack.dumps(len(keys)))
-        txn.put(b"__classnum__", msgpack.dumps(int(data_loader.dataset.classnum)))
+        txn.put(
+            b"__classnum__", msgpack.dumps(int(data_loader.dataset.classnum))
+        )
 
     print("Flushing database ...")
     db.sync()
@@ -198,7 +204,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mask_source", "-ms", help="Path to the image masks [optional]."
     )
-    parser.add_argument("--workers", "-w", help="Workers number.", default=16, type=int)
+    parser.add_argument(
+        "--workers", "-w", help="Workers number.", default=16, type=int
+    )
     parser.add_argument(
         "--attribute",
         "-a",

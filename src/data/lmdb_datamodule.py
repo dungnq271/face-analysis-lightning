@@ -21,7 +21,6 @@ class LMDBDataModule(LightningDataModule):
         num_workers: int = 0,
         pin_memory: bool = False,
     ) -> None:
-
         # if meta_train:
         #     batch_size = len(self._dataset)
         # else:
@@ -51,7 +50,6 @@ class LMDBDataModule(LightningDataModule):
                 transforms.Resize((240, 240)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
-
             ]
         )
 
@@ -61,7 +59,7 @@ class LMDBDataModule(LightningDataModule):
             self.target_transform = self.transform_ages_to_one_hot_ordinal
 
         # self._dataset = LMDB(self.hparams.lmdb_path, transform, target_transform, use_mask)
-        
+
     def class_num(self):
         return self._dataset.classnum
 

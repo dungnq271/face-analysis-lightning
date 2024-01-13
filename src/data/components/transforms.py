@@ -2,11 +2,13 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2 as ToTensor
 
 
-def get_img_trans(phase,
-                  image_size=256,
-                  crop_size=224,
-                  mean=(0.485, 0.456, 0.406),
-                  std=(0.229, 0.224, 0.225)):
+def get_img_trans(
+    phase,
+    image_size=256,
+    crop_size=224,
+    mean=(0.485, 0.456, 0.406),
+    std=(0.229, 0.224, 0.225),
+):
     normalize = A.Normalize(mean=mean, std=std)
     if phase == "train":
         return A.Compose(

@@ -67,7 +67,7 @@ class GenderLitModule(LightningModule):
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Perform a single model step on a batch of data.
 
-        :param batch: A batch of data (a tuple) containing the input tensor of 
+        :param batch: A batch of data (a tuple) containing the input tensor of
                         images and target labels.
 
         :return: A tuple containing (in order):
@@ -103,14 +103,14 @@ class GenderLitModule(LightningModule):
             self.train_loss,
             on_step=False,
             on_epoch=True,
-            prog_bar=True
+            prog_bar=True,
         )
         self.log(
             "train/acc",
             self.train_acc,
             on_step=False,
             on_epoch=True,
-            prog_bar=True
+            prog_bar=True,
         )
 
         # return loss or backpropagation will fail
@@ -134,16 +134,20 @@ class GenderLitModule(LightningModule):
         # update and log metrics
         self.val_loss(loss)
         self.val_acc(preds, targets)
-        self.log("val/loss",
-                 self.val_loss,
-                 on_step=False,
-                 on_epoch=True,
-                 prog_bar=True)
-        self.log("val/acc",
-                 self.val_acc,
-                 on_step=False,
-                 on_epoch=True,
-                 prog_bar=True)
+        self.log(
+            "val/loss",
+            self.val_loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+        )
+        self.log(
+            "val/acc",
+            self.val_acc,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+        )
 
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
@@ -155,7 +159,7 @@ class GenderLitModule(LightningModule):
             "val/acc_best",
             self.val_acc_best.compute(),
             sync_dist=True,
-            prog_bar=True
+            prog_bar=True,
         )
 
     def test_step(
@@ -177,14 +181,15 @@ class GenderLitModule(LightningModule):
             self.test_loss,
             on_step=False,
             on_epoch=True,
-            prog_bar=True
-            )
-        self.log("test/acc",
-                 self.test_acc,
-                 on_step=False,
-                 on_epoch=True,
-                 prog_bar=True
-                 )
+            prog_bar=True,
+        )
+        self.log(
+            "test/acc",
+            self.test_acc,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+        )
 
     def on_test_epoch_end(self) -> None:
         """Lightning hook that is called when a test epoch ends."""
@@ -211,7 +216,9 @@ class GenderLitModule(LightningModule):
 
         :return: A dict containing the configured optimizers and learning-rate schedulers to be used for training.
         """
-        optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
+        optimizer = self.hparams.optimizer(
+            params=self.trainer.model.parameters()
+        )
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)
             return {
