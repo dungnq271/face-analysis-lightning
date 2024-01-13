@@ -146,7 +146,6 @@ dmypy.json
 
 # Lightning-Hydra-Template
 configs/local/default.yaml
-/data/
 /logs/
 .env
 
@@ -161,7 +160,9 @@ checkpoints/
 notebooks/eval_models/caches/*
 annotates/*
 
-!annotates/app.py
 pl-hydra
 dataset
 drawio
+data/*
+
+!data/interim/image_lists/*
