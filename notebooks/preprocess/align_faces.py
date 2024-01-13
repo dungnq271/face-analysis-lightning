@@ -35,5 +35,4 @@ landmarks = fa.get_landmarks_from_image(
     return_landmark_score=True,
 )
 
-
 # %%
