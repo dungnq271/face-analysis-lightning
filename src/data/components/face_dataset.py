@@ -33,6 +33,8 @@ class FaceDataset(Dataset):
         self.data = pd.read_csv(image_list, delimiter=" ", header=None)
         self.data = np.array(self.data)
         self.img_dir = img_dir
+        self.transform = None
+
         if transform:
             self.transform = get_img_trans(
                 mode,
