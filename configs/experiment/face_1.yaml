@@ -38,5 +38,6 @@ logger:
   wandb:
     tags: ${tags}
     group: "f_all"
+    project: "face-analysis"
   aim:
     experiment: "f_all"
