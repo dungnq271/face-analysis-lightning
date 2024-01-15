@@ -5,7 +5,7 @@ import cv2
 
 import torch
 from torch.utils.data import Dataset
-from .transforms import get_img_trans
+from .transforms import get_img_trans, fixed_image_standardization
 
 
 class FaceDataset(Dataset):
@@ -18,6 +18,7 @@ class FaceDataset(Dataset):
                  std,
                  image_size,
                  crop_size,
+                 backbone_name,
                  mode="train",
                  transform=None,
                  predict_mode=False):
@@ -31,12 +32,14 @@ class FaceDataset(Dataset):
         self.data = pd.read_csv(image_list, delimiter=" ", header=None)
         self.data = np.array(self.data)
         self.root_dir = root_dir
+        self.backbone_name = backbone_name
         if transform:
             self.transform = get_img_trans(mode,
                                            image_size=image_size,
                                            crop_size=crop_size,
                                            mean=mean,
-                                           std=std)
+                                           std=std,
+                                           backbone_name=backbone_name)
         self.age_classes = 6
         self.predict_mode = predict_mode
         
@@ -53,6 +56,7 @@ class FaceDataset(Dataset):
         label = self.data[idx][1:]
         if self.transform:
             image = self.transform(image=image)["image"]
+            image = fixed_image_standardization(image)
         if self.predict_mode:
             return image, img_name
         target = {"race": label[0],

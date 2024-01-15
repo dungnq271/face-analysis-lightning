@@ -64,7 +64,7 @@ class FaceCustomLitModule(LightningModule):
         # loss function
         # metric objects for calculating and averaging accuracy across batches
         for attr in self.attrs.keys():
-            if attr != "age":
+            if attr not in ["age", "gender", "masked"]:
                 setattr(self,
                         f"criterion_{attr}",
                         self.criterion)
@@ -101,36 +101,68 @@ class FaceCustomLitModule(LightningModule):
                 setattr(self,
                         f"criterion_{attr}",
                         torch.nn.BCELoss())
-                setattr(self,
-                        f"train_acc_{attr}",
-                        Accuracy(task="multilabel",
-                                 num_labels=int(self.attrs[attr])
-                                 )
-                        )
-                setattr(self,
-                        f"val_acc_{attr}",
-                        Accuracy(task="multilabel",
-                                 num_labels=int(self.attrs[attr])
-                                 )
-                        )
-                setattr(self,
-                        f"test_acc_{attr}",
-                        Accuracy(task="multilabel",
-                                 num_labels=int(self.attrs[attr])
-                                 )
-                        )
-                setattr(self,
-                        f"test_f1_{attr}",
-                        FBetaScore(task="multilabel",
-                                   num_labels=int(self.attrs[attr]),
-                                   )
-                        )
-                setattr(self,
-                        f"test_auroc_{attr}",
-                        AUROC(task="multilabel",
-                              num_labels=int(self.attrs[attr])
-                              )
-                        )
+                if attr == "age":
+                    setattr(self,
+                            f"train_acc_{attr}",
+                            Accuracy(task="multilabel",
+                                     num_labels=int(self.attrs[attr])
+                                     )
+                            )
+                    setattr(self,
+                            f"val_acc_{attr}",
+                            Accuracy(task="multilabel",
+                                     num_labels=int(self.attrs[attr])
+                                     )
+                            )
+                    setattr(self,
+                            f"test_acc_{attr}",
+                            Accuracy(task="multilabel",
+                                     num_labels=int(self.attrs[attr])
+                                     )
+                            )
+                    setattr(self,
+                            f"test_f1_{attr}",
+                            FBetaScore(task="multilabel",
+                                       num_labels=int(self.attrs[attr]),
+                                       )
+                            )
+                    setattr(self,
+                            f"test_auroc_{attr}",
+                            AUROC(task="multilabel",
+                                  num_labels=int(self.attrs[attr])
+                                  )
+                            )
+                else:
+                    setattr(self,
+                            f"train_acc_{attr}",
+                            Accuracy(task="binary",
+                                     num_classes=int(self.attrs[attr])
+                                     )
+                            )
+                    setattr(self,
+                            f"val_acc_{attr}",
+                            Accuracy(task="binary",
+                                     num_classes=int(self.attrs[attr])
+                                     )
+                            )
+                    setattr(self,
+                            f"test_acc_{attr}",
+                            Accuracy(task="binary",
+                                     num_classes=int(self.attrs[attr])
+                                     )
+                            )
+                    setattr(self,
+                            f"test_f1_{attr}",
+                            FBetaScore(task="binary",
+                                       num_classes=int(self.attrs[attr]),
+                                       )
+                            )
+                    setattr(self,
+                            f"test_auroc_{attr}",
+                            AUROC(task="binary",
+                                  num_classes=int(self.attrs[attr])
+                                  )
+                            )
 
             # for averaging loss across batches
             setattr(self, f"train_loss_{attr}", MeanMetric())
@@ -180,11 +212,17 @@ class FaceCustomLitModule(LightningModule):
             - A tensor of target labels.
         """
         x, y = batch
-
         pred = self.forward(x)
-        if "age" in self.attrs.keys():
+        keys = list(pred.keys())
+        if "age" in keys:
             pred['age'] = pred['age'].float()
             y['age'] = y['age'].float()
+        if "gender" in keys:
+            pred['gender'] = pred['gender'].float()
+            y['gender'] = y['gender'].float()
+        if "masked" in keys:
+            pred['masked'] = pred['masked'].float()
+            y['masked'] = y['masked'].float()
         losses = {}
         for attr in self.attrs.keys():
             loss = getattr(self,
@@ -287,7 +325,7 @@ class FaceCustomLitModule(LightningModule):
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
         self.cur_val = self.val_acc.compute()
-        if self.val_acc >= self.val_acc_best:
+        if self.val_acc >= self.val_acc_best.compute():
             for attr in self.attrs.keys():
                 torch.save(
                     getattr(

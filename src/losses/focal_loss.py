@@ -40,13 +40,13 @@ class FocalLoss(nn.Module):
                 'Reduction must be one of: "mean", "sum", "none".')
 
         super().__init__()
-        self.alpha = alpha
+        self.alpha = torch.Tensor(alpha).to("cuda:0") if alpha else None
         self.gamma = gamma
         self.ignore_index = ignore_index
         self.reduction = reduction
 
         self.nll_loss = nn.NLLLoss(
-            weight=alpha, reduction='none', ignore_index=ignore_index)
+            weight=self.alpha, reduction='none', ignore_index=ignore_index)
 
     def __repr__(self):
         arg_keys = ['alpha', 'gamma', 'ignore_index', 'reduction']

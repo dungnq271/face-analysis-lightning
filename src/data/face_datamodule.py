@@ -21,7 +21,8 @@ class FaceDataModule(LightningDataModule):
         mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
         std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
         image_size: int = 256,
-        crop_size: int = 224
+        crop_size: int = 224,
+        backbone_name: str = "resnet50",
     ) -> None:
         """Initialize a `FashionDataModule`.
 
@@ -42,6 +43,7 @@ class FaceDataModule(LightningDataModule):
         self.data_test: Optional[Dataset] = None
 
         self.batch_size_per_device = batch_size
+        self.backbone_name = backbone_name
 
     @property
     def num_classes(self) -> int:
@@ -92,6 +94,7 @@ class FaceDataModule(LightningDataModule):
                 self.hparams.crop_size,
                 mode="train",
                 transform=True,
+                backbone_name=self.backbone_name,
             )
             testset = FaceDataset(
                 self.hparams.root_dir,
@@ -102,6 +105,7 @@ class FaceDataModule(LightningDataModule):
                 self.hparams.crop_size,
                 mode="test",
                 transform=True,
+                backbone_name=self.backbone_name,
             )
 
             val_size = int(self.hparams.val_test_split[0] * len(testset))

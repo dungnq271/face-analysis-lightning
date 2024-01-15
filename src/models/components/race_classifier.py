@@ -8,6 +8,7 @@ class RaceClassifier(nn.Module):
     def __init__(
         self,
         output_size: int = 3,
+        num_of_features: int = 2048,
     ) -> None:
         """Initialize a `ColorClassifier` module.
 
@@ -16,7 +17,7 @@ class RaceClassifier(nn.Module):
         """
         super().__init__()
         self.output_size = output_size
-        self.classifier = nn.Linear(2048, self.output_size)
+        self.classifier = nn.Linear(num_of_features, self.output_size)
         self.softmax = nn.Softmax()
 
     def forward(self, representation: torch.Tensor) -> torch.Tensor:

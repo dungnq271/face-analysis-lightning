@@ -2,6 +2,7 @@ import torch
 from torch import nn
 
 from timm import create_model
+from .backbones import InceptionResnetV1
 
 
 class BackboneMaker(nn.Module):
@@ -10,7 +11,7 @@ class BackboneMaker(nn.Module):
     def __init__(
         self,
         name: str,
-        pretrained: bool = True,
+        pretrained: bool = False,
         checkpoint_path: str = None,
     ) -> None:
         """Initialize a `backbone` module.
@@ -23,14 +24,19 @@ class BackboneMaker(nn.Module):
         self.pretrained = pretrained
         self.checkpoint_path = checkpoint_path
         # use the pretrained model
-        self.backbone = create_model(
-            self.name,
-            pretrained=self.pretrained,
-            checkpoint_path=self.checkpoint_path,
-            num_classes=10,
-            global_pool="avg",
-        )
-        self.backbone.reset_classifier(0)
+        if self.name == "inception_resnet_v1":
+            self.backbone = InceptionResnetV1(
+                pretrained=self.pretrained,
+                checkpoint_path=self.checkpoint_path)
+        else:
+            self.backbone = create_model(
+                self.name,
+                pretrained=self.pretrained,
+                checkpoint_path=self.checkpoint_path,
+                num_classes=10,
+                global_pool="avg",
+            )
+            self.backbone.reset_classifier(0)
         for param in self.backbone.parameters():
             param.requires_grad = False
 

@@ -11,7 +11,7 @@ import pprint
 
 from tqdm import tqdm
 
-pp = pprint.PrettyPrinter(depth=4)
+pp = pprint.PrettyPrinter(depth=2)
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.models.face_custom_module import FaceCustomLitModule
 from src.models.components.age_classifier import AgeClassifier
@@ -28,6 +28,11 @@ from torch.utils.data import DataLoader
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def fixed_image_standardization(image_tensor):
+    processed_tensor = (image_tensor - 127.5) / 128.0
+    return processed_tensor
+
+
 class Predictor:
     def __init__(self, args):
         self.ckpt_dir = args.ckpt_dir
@@ -38,11 +43,17 @@ class Predictor:
         self.csv_path = args.csv_path
         self.attributes = args.attributes.split("|")
         self.backbone_name = args.backbone_name
-        self.backbone = BackboneMaker(name=self.backbone_name).to(device)
-        self.backbone_checkpoint = os.path.join(self.ckpt_dir,
-                                                "backbone",
-                                                "best.ckpt")
-        self.race_head = RaceClassifier()
+        self.backbone = BackboneMaker(
+            name=self.backbone_name).to(device)
+        if args.backbone_checkpoint:
+            self.backbone_checkpoint = args.backbone_checkpoint
+            self.state_dict = self.re_keys(
+                torch.load(self.backbone_checkpoint))
+        else:
+            self.backbone_checkpoint = os.path.join(self.ckpt_dir,
+                                                    "backbone",
+                                                    "best.ckpt")
+        self.race_head = RaceClassifier(num_of_features=512)
         self.gender_head = GenderClassifier()
         self.age_head = AgeClassifier()
         self.skintone_head = SkintoneClassifier()
@@ -51,11 +62,19 @@ class Predictor:
         for attr in self.attributes:
             setattr(self, "checkpoint" + attr, None)
 
+    def re_keys(self, dict):
+        new_dict = dict.copy()
+        for key in dict.keys():
+            new_key = "backbone." + key
+            new_dict[new_key] = new_dict[key]
+            del new_dict[key]
+        return new_dict
+    
     def load_model(self):
         model = {}
         model["backbone"] = self.backbone.eval()
         self.backbone.load_state_dict(
-            torch.load(self.backbone_checkpoint))
+            self.state_dict)
         for attr in self.attributes:
             setattr(self, attr + "_checkpoint", os.path.join(
                 self.ckpt_dir,
@@ -68,18 +87,29 @@ class Predictor:
             model[attr] = getattr(self, attr + "_head")
         return model
 
-    def model_predict_image(self, model, image_path):
+    def model_predict_image(self, model,
+                            image_path,
+                            backbone_name="resnet50"):
         pred = {}
         image_name = os.path.basename(image_path)
         img = Image.open(image_path)
         img = img.convert("RGB")
-        transform = Compose(
-            [
-                transforms.Resize((224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,)),
-            ]
-        )
+        if backbone_name == "inception_resnet_v1":
+            transform = Compose(
+                [
+                    transforms.Resize((160, 160)),
+                    transforms.ToTensor(),
+                    fixed_image_standardization,
+                ]
+            )
+        if backbone_name == "resnet50":
+            transform = Compose(
+                [
+                    transforms.Resize((240, 240)),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5,), (0.5,)),
+                ]
+            )
         img = transform(img)
         img = img.unsqueeze(0)
         img = img.to(device)
@@ -226,6 +256,7 @@ if __name__ == "__main__":
     parser.add_argument("--csv_path", type=str)
     parser.add_argument("--attributes", type=str)
     parser.add_argument("--backbone_name", type=str)
+    parser.add_argument("--backbone_checkpoint", type=str)
     args = parser.parse_args()
     predictor = Predictor(args)
     model = predictor.load_model()
