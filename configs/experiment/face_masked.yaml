@@ -19,10 +19,10 @@ seed: 12345
 
 data:
   num_workers: 4
-  root_dir: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/aligned_faces_added_race
-  image_train_list: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/image_lists/face_train_added_race.txt
-  image_test_list: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/image_lists/face_test.txt
-  mean: [0.5, 0.5, 0.5]
+  root_dir: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/aligned_faces_added_race #old dataset + new race dataset
+  image_train_list: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/image_lists/face_train_added_race.txt #new train list
+  image_test_list: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/image_lists/face_test.txt #default test dataset
+  mean: [0.5, 0.5, 0.5] 
   std: [0.5, 0.5, 0.5]
   image_size: 256
   crop_size: 224
@@ -53,6 +53,7 @@ model:
     _target_: src.models.components.backbone_maker.BackboneMaker  
     name: inception_resnet_v1 # timm format
     pretrained: true
+    #Download checkpoint path from https://drive.google.com/file/d/1_iEmprqxyQEMMQP-moisaRRsx9LtSXF_/view?usp=drive_link
     checkpoint_path: /media/gnort/HDD6/Study/face-analysis-lightning/weights/20180402-114759-vggface2.pt
 
 callbacks:
