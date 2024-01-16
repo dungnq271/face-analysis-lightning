@@ -7,9 +7,6 @@ from .utils import get_named_function
 import torchvision.models as models
 
 
-NAMED_MODEL = get_named_function(B)
-
-
 class FaceAttrsClassifier(nn.Module):
     """A simple fully-connected neural net for computing predictions."""
 
@@ -29,7 +26,10 @@ class FaceAttrsClassifier(nn.Module):
         :param output_size: The number of output features of the final linear layer.
         """
         super().__init__()
-        self.backbone = models.resnet50(weights="DEFAULT")
+        if backbone == "resnet50":
+            self.backbone = models.resnet50(weights="DEFAULT")
+        elif backbone == "resnet101":
+            self.backbone = models.resnet101(weights="DEFAULT")
         num_filters = self.backbone.fc.in_features
 
         # Freeze the backbone
@@ -42,7 +42,7 @@ class FaceAttrsClassifier(nn.Module):
 
         # use the pretrained model
         self.race_classifier = nn.Linear(num_filters, race_output_size)
-        self.gender_classifier = nn.Linear(num_filters, gender_output_size - 1)
+        self.gender_classifier = nn.Linear(num_filters, gender_output_size)
         self.age_classifier = nn.Linear(num_filters, age_output_size)
         self.skintone_classifier = nn.Linear(num_filters, skintone_output_size)
         self.emotion_classifier = nn.Linear(num_filters, emotion_output_size)
