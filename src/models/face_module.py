@@ -1,5 +1,6 @@
+import os.path as osp
+import logging
 from typing import Any, Dict, Tuple
-from icecream import ic
 
 import torch
 from lightning import LightningModule
@@ -7,6 +8,9 @@ from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy, BinaryAccuracy
 from torchmetrics.classification.f_beta import FBetaScore, BinaryFBetaScore
 from torchmetrics.classification.auroc import AUROC, BinaryAUROC
+from .components.utils import load_pretrained
+
+logger = logging.getLogger(__name__)
 
 
 class FaceLitModule(LightningModule):
@@ -15,6 +19,7 @@ class FaceLitModule(LightningModule):
     def __init__(
         self,
         net: torch.nn.Module,
+        pretrained: str,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         num_heads: int,
@@ -37,6 +42,13 @@ class FaceLitModule(LightningModule):
         self.save_hyperparameters(logger=False)
 
         self.net = net
+
+        if isinstance(pretrained, str) and osp.exists(pretrained):
+            logger.info(f"Loading weights from {pretrained}.")
+            pretrained_state_dict = torch.load(pretrained)
+            state_dict = self.net.state_dict()
+            load_pretrained(state_dict, pretrained_state_dict)
+        
         self.attrs = attributes
         self.cur_val = 0
 

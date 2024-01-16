@@ -17,8 +17,11 @@ net:
   _target_: src.models.components.face_attrs_classifier.FaceAttrsClassifier  
   backbone: resnet50
 
+# load pretrained weight
+pretrained: "checkpoints/best_resnet_101_student_e56.pth"
+
 # compile model for faster training with pytorch 2.0
-compile: false
+compile: true
 
 num_classes: [4, 2, 6, 4, 7, 2] #race, gender, age, skintone, emotions, masked
 num_heads: 6
