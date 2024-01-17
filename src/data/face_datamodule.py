@@ -12,8 +12,8 @@ class FaceDataModule(LightningDataModule):
     def __init__(
         self,
         img_dir: str,
-        image_train_list: str = "face.csv",
-        image_test_list: str = "face.csv",
+        image_train_list: str = "train.txt",
+        image_test_list: str = "test.txt",
         val_test_split: Tuple[float, float] = (0.5, 0.5),
         batch_size: int = 64,
         num_workers: int = 0,
