@@ -33,7 +33,7 @@ if __name__ == "__main__":
     txt_path = parse_args().txt
     csv_path = parse_args().csv
     df = pd.read_csv(csv_path)
-    df_dropped = df.drop(["file_name", "height", "width", "bbox"], axis=1)
+    df_dropped = df.drop(["face_file_name", "file_name", "height", "width", "bbox"], axis=1)
     df_encoded = df_dropped.copy()
     encoded_columns = ["race", "masked", "skintone", "emotion", "gender"]
     for column in encoded_columns:
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     df_encoded["age"] = df_dropped["age"].apply(age_mapping)
     df_encoded = df_encoded[
         [
-            "face_file_name",
+            "face_file_path",
             "race",
             "gender",
             "age",
