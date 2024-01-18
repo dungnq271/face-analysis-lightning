@@ -1,6 +1,6 @@
 _target_: src.data.face_datamodule.FaceDataModule
 
-img_dir: ${paths.data_dir}/cropped_faces
+img_dir: ${paths.data_dir}
 image_train_list: ${paths.data_dir}/image_lists_full/train.txt
 image_test_list: ${paths.data_dir}/image_lists_full/test.txt
 
