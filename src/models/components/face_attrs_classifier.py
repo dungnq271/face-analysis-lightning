@@ -46,7 +46,7 @@ class FaceAttrsClassifier(nn.Module):
         self.age_classifier = nn.Linear(num_filters, age_output_size)
         self.skintone_classifier = nn.Linear(num_filters, skintone_output_size)
         self.emotion_classifier = nn.Linear(num_filters, emotion_output_size)
-        self.masked_classifier = nn.Linear(num_filters, masked_output_size - 1)
+        self.masked_classifier = nn.Linear(num_filters, masked_output_size)
         self.softmax = nn.Softmax(dim=1)
         self.sigmoid = nn.Sigmoid()
 
