@@ -7,6 +7,7 @@ class SkintoneClassifier(nn.Module):
 
     def __init__(
         self,
+        num_of_features: int = 2048,
         output_size: int = 4,
     ) -> None:
         """Initialize a `ColorClassifier` module.
@@ -16,7 +17,48 @@ class SkintoneClassifier(nn.Module):
         """
         super().__init__()
         self.output_size = output_size
-        self.classifier = nn.Linear(2048, self.output_size)
+        if num_of_features > 1024:
+            self.classifier = self.fc1 = nn.Sequential(
+                nn.Linear(num_of_features, 1024),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(1024, 512),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(512, 256),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(256, 128),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(128, output_size))
+        elif num_of_features > 512:
+            self.classifier = self.fc1 = nn.Sequential(
+                nn.Linear(num_of_features, 512),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(512, 256),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(256, 128),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(128, output_size))
+        elif num_of_features > 256:
+            self.classifier = self.fc1 = nn.Sequential(
+                nn.Linear(num_of_features, 256),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(256, 128),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(128, output_size))
+        else:
+            self.classifier = self.fc1 = nn.Sequential(
+                nn.Linear(256, 128),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(128, output_size))
         self.softmax = nn.Softmax()
 
     def forward(self, representation: torch.Tensor) -> torch.Tensor:
@@ -27,7 +69,7 @@ class SkintoneClassifier(nn.Module):
         """
         # use the pretrained model
         x = self.classifier(representation)
-        x = self.softmax(x)
+        # x = self.softmax(x)
         return x
 
 

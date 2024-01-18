@@ -15,7 +15,33 @@ def get_img_trans(phase,
                   std=(0.229, 0.224, 0.225),
                   backbone_name="resnet50"):
     normalize = A.Normalize(mean=mean, std=std)
-    if backbone_name == "resnet50":
+    if backbone_name == "inception_resnet_v1":
+        if phase == "train":
+            return A.Compose(
+                [
+                    # np.float32,
+                    A.Resize(160, 160),
+                    A.HorizontalFlip(),
+                    ToTensor(),
+                ]
+            )
+        elif phase in ["test", "val"]:
+            return A.Compose(
+                [
+                    A.Resize(160, 160),
+                    ToTensor(),
+                ]
+            )
+        elif phase in ["predict"]:
+            return A.Compose(
+                [
+                    A.Resize(160, 160),
+                    ToTensor(),
+                ]
+            )
+        else:
+            raise KeyError
+    elif backbone_name in ["resnet50", "vgg", "resnet18"]:
         if phase == "train":
             return A.Compose(
                 [
@@ -40,32 +66,6 @@ def get_img_trans(phase,
                 [
                     A.Resize(image_size, image_size),
                     normalize,
-                    ToTensor(),
-                ]
-            )
-        else:
-            raise KeyError
-    elif backbone_name == "inception_resnet_v1":
-        if phase == "train":
-            return A.Compose(
-                [
-                    # np.float32,
-                    A.Resize(160, 160),
-                    A.HorizontalFlip(),
-                    ToTensor(),
-                ]
-            )
-        elif phase in ["test", "val"]:
-            return A.Compose(
-                [
-                    A.Resize(160, 160),
-                    ToTensor(),
-                ]
-            )
-        elif phase in ["predict"]:
-            return A.Compose(
-                [
-                    A.Resize(160, 160),
                     ToTensor(),
                 ]
             )

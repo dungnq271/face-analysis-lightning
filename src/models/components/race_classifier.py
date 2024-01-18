@@ -17,8 +17,49 @@ class RaceClassifier(nn.Module):
         """
         super().__init__()
         self.output_size = output_size
-        self.classifier = nn.Linear(num_of_features, self.output_size)
-        self.softmax = nn.Softmax()
+        if num_of_features > 1024:
+            self.classifier = self.fc1 = nn.Sequential(
+                nn.Linear(num_of_features, 1024),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(1024, 512),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(512, 256),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(256, 128),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(128, output_size))
+        elif num_of_features > 512:
+            self.classifier = self.fc1 = nn.Sequential(
+                nn.Linear(num_of_features, 512),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(512, 256),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(256, 128),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(128, output_size))
+        elif num_of_features > 256:
+            self.classifier = self.fc1 = nn.Sequential(
+                nn.Linear(num_of_features, 256),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(256, 128),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(128, output_size))
+        else:
+            self.classifier = self.fc1 = nn.Sequential(
+                nn.Linear(256, 128),
+                nn.ReLU(inplace=True),
+
+                nn.Linear(128, output_size))
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, representation: torch.Tensor) -> torch.Tensor:
         """Perform a single forward pass through the network.
@@ -28,7 +69,7 @@ class RaceClassifier(nn.Module):
         """
         # use the pretrained model
         x = self.classifier(representation)
-        x = self.softmax(x)
+        # x = self.softmax(x)
         return x
 
 

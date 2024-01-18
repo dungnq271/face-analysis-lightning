@@ -1,5 +1,5 @@
 _target_: src.data.face_datamodule.FaceDataModule
-root_dir: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/cropped_faces
+img_dir: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/cropped_faces
 image_train_list: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/image_lists/face_train.txt
 image_test_list: /media/gnort/HDD6/Study/face-analysis-lightning/dataset/face/image_lists/face_test.txt
 # mean: [0.485, 0.456, 0.406]

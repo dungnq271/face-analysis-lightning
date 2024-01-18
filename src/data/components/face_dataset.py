@@ -52,11 +52,12 @@ class FaceDataset(Dataset):
         img_name = self.data[idx][0]
         img_path = osp.join(self.root_dir, img_name)
         image = cv2.imread(img_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         label = self.data[idx][1:]
         if self.transform:
             image = self.transform(image=image)["image"]
-            image = fixed_image_standardization(image)
+            if self.backbone_name == "inception_resnet_v1":
+                image = fixed_image_standardization(image)
         if self.predict_mode:
             return image, img_name
         target = {"race": label[0],

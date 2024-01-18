@@ -1,11 +1,16 @@
+import os.path as osp
+import logging
 from typing import Any, Dict, Tuple
 
 import torch
 from lightning import LightningModule
 from torchmetrics import MaxMetric, MeanMetric
-from torchmetrics.classification.accuracy import Accuracy
-from torchmetrics.classification.f_beta import FBetaScore
-from torchmetrics.classification.auroc import AUROC
+from torchmetrics.classification.accuracy import Accuracy, BinaryAccuracy
+from torchmetrics.classification.f_beta import FBetaScore, BinaryFBetaScore
+from torchmetrics.classification.auroc import AUROC, BinaryAUROC
+from .components.utils import load_pretrained
+
+logger = logging.getLogger(__name__)
 
 
 class FaceLitModule(LightningModule):
@@ -14,12 +19,15 @@ class FaceLitModule(LightningModule):
     def __init__(
         self,
         net: torch.nn.Module,
+        pretrained: str,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         num_heads: int,
         compile: bool,
         num_classes: Tuple[int, int, int, int, int, int],
         attributes: Tuple[str, str, str, str, str, str],
+        binary_threshold: float = 0.5,
+        binary_beta: float = 1.0,
     ) -> None:
         """Initialize a `FaceLitModule`.
 
@@ -34,78 +42,76 @@ class FaceLitModule(LightningModule):
         self.save_hyperparameters(logger=False)
 
         self.net = net
+
+        if isinstance(pretrained, str) and osp.exists(pretrained):
+            logger.info(f"Loading weights from {pretrained}.")
+            pretrained_state_dict = torch.load(pretrained)
+            state_dict = self.net.state_dict()
+            load_pretrained(state_dict, pretrained_state_dict)
+        
         self.attrs = attributes
         self.cur_val = 0
+
         # loss function
         # metric objects for calculating and averaging accuracy across batches
         for i in range(self.hparams.num_heads):
-            if i != 2:
-                setattr(self,
-                        f"criterion_{self.attrs[i]}",
-                        torch.nn.CrossEntropyLoss())
-                setattr(self,
-                        f"train_acc_{self.attrs[i]}",
-                        Accuracy(task="multiclass",
-                                 num_classes=num_classes[i]
-                                 )
-                        )
-                setattr(self,
-                        f"val_acc_{self.attrs[i]}",
-                        Accuracy(task="multiclass",
-                                 num_classes=num_classes[i]
-                                 )
-                        )
-                setattr(self,
-                        f"test_acc_{self.attrs[i]}",
-                        Accuracy(task="multiclass",
-                                 num_classes=num_classes[i]
-                                 )
-                        )
-                setattr(self,
-                        f"test_f1_{self.attrs[i]}",
-                        FBetaScore(task="multiclass",
-                                   num_classes=num_classes[i],
-                                   )
-                        )
-                setattr(self,
-                        f"test_auroc_{self.attrs[i]}",
-                        AUROC(task="multiclass",
-                              num_classes=num_classes[i])
-                        )
+            if num_classes[i] != 1:
+                setattr(
+                    self,
+                    f"criterion_{self.attrs[i]}",
+                    torch.nn.CrossEntropyLoss(),
+                )
+                setattr(
+                    self,
+                    f"train_acc_{self.attrs[i]}",
+                    Accuracy(task="multiclass", num_classes=num_classes[i]),
+                )
+                setattr(
+                    self,
+                    f"val_acc_{self.attrs[i]}",
+                    Accuracy(task="multiclass", num_classes=num_classes[i]),
+                )
+                setattr(
+                    self,
+                    f"test_acc_{self.attrs[i]}",
+                    Accuracy(task="multiclass", num_classes=num_classes[i]),
+                )
+                setattr(
+                    self,
+                    f"test_f1_{self.attrs[i]}",
+                    FBetaScore(
+                        task="multiclass",
+                        num_classes=num_classes[i],
+                    ),
+                )
+                setattr(
+                    self,
+                    f"test_auroc_{self.attrs[i]}",
+                    AUROC(task="multiclass", num_classes=num_classes[i]),
+                )
             else:
-                setattr(self,
-                        f"criterion_{self.attrs[i]}",
-                        torch.nn.BCELoss())
-                setattr(self,
-                        f"train_acc_{self.attrs[i]}",
-                        Accuracy(task="multilabel",
-                                 num_labels=num_classes[i]
-                                 )
-                        )
-                setattr(self,
-                        f"val_acc_{self.attrs[i]}",
-                        Accuracy(task="multilabel",
-                                 num_labels=num_classes[i]
-                                 )
-                        )
-                setattr(self,
-                        f"test_acc_{self.attrs[i]}",
-                        Accuracy(task="multilabel",
-                                 num_labels=num_classes[i]
-                                 )
-                        )
-                setattr(self,
-                        f"test_f1_{self.attrs[i]}",
-                        FBetaScore(task="multilabel",
-                                   num_labels=num_classes[i],
-                                   )
-                        )
-                setattr(self,
-                        f"test_auroc_{self.attrs[i]}",
-                        AUROC(task="multilabel",
-                              num_labels=num_classes[i]
-                              )
-                        )
+                setattr(self, f"criterion_{self.attrs[i]}", torch.nn.BCELoss())
+                setattr(
+                    self,
+                    f"train_acc_{self.attrs[i]}",
+                    BinaryAccuracy(threshold=binary_threshold),
+                )
+                setattr(
+                    self,
+                    f"val_acc_{self.attrs[i]}",
+                    BinaryAccuracy(threshold=binary_threshold),
+                )
+                setattr(
+                    self,
+                    f"test_acc_{self.attrs[i]}",
+                    BinaryAccuracy(threshold=binary_threshold),
+                )
+                setattr(
+                    self,
+                    f"test_f1_{self.attrs[i]}",
+                    BinaryFBetaScore(beta=binary_beta),
+                )
+                setattr(self, f"test_auroc_{self.attrs[i]}", BinaryAUROC())
 
             # for averaging loss across batches
             setattr(self, f"train_loss_{self.attrs[i]}", MeanMetric())
@@ -150,23 +156,20 @@ class FaceLitModule(LightningModule):
             - A tensor of predictions.
             - A tensor of target labels.
         """
-        x, y = batch
-
-        pred = self.forward(x)
-        pred['age'] = pred['age'].float()
-        y['age'] = y['age'].float()
+        xs, ys = batch
+        # breakpoint()
+        preds = self.forward(xs)
         losses = {}
+
         for i in range(self.hparams.num_heads):
-            loss = getattr(self,
-                           f"criterion_{self.attrs[i]}")(pred[self.attrs[i]],
-                                                         y[self.attrs[i]])
-            getattr(self,
-                    f"train_loss_{self.attrs[i]}")(loss)
-            getattr(self,
-                    f"train_acc_{self.attrs[i]}")(pred[self.attrs[i]],
-                                                  y[self.attrs[i]])
+            if i in [2, self.hparams.num_heads - 1]:
+                preds[self.attrs[i]] = preds[self.attrs[i]].float().squeeze()
+                ys[self.attrs[i]] = ys[self.attrs[i]].float()
+
+            loss = getattr(self, f"criterion_{self.attrs[i]}")(preds[self.attrs[i]].squeeze(), ys[self.attrs[i]])
             losses[self.attrs[i]] = loss
-        return losses, pred, y
+
+        return losses, preds, ys
 
     def training_step(
         self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int
@@ -180,23 +183,24 @@ class FaceLitModule(LightningModule):
         """
         losses, preds, targets = self.model_step(batch)
         for i in range(self.hparams.num_heads):
-            # getattr(self, f"train_loss_{self.attrs[i]}")(losses[self.attrs[i]])
-            # getattr(self, f"train_acc_{self.attrs[i]}")(preds[self.attrs[i]],
-            #                                             targets[self.attrs[i]])
+            getattr(self, f"train_loss_{self.attrs[i]}")(losses[self.attrs[i]])
+            getattr(self, f"train_acc_{self.attrs[i]}")(preds[self.attrs[i]], targets[self.attrs[i]])
+
             self.log(
                 f"train/loss_{self.attrs[i]}",
                 getattr(self, f"train_loss_{self.attrs[i]}"),
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
-                )
+            )
             self.log(
                 f"train/acc_{self.attrs[i]}",
                 getattr(self, f"train_acc_{self.attrs[i]}"),
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
-                )
+            )
+
         # return loss or backpropagation will fail
         if self.hparams.num_heads > 1:
             loss_mean = torch.stack(list(losses.values())).mean()
@@ -215,15 +219,12 @@ class FaceLitModule(LightningModule):
             labels.
         :param batch_idx: The index of the current batch.
         """
-        loss, preds, targets = self.model_step(batch)
+        losses, preds, targets = self.model_step(batch)
         for i in range(self.hparams.num_heads):
-            val_loss = getattr(
-                self,
-                f"val_loss_{self.attrs[i]}")(loss[self.attrs[i]])
-            val_acc = getattr(
-                self,
-                f"val_acc_{self.attrs[i]}")(preds[self.attrs[i]],
-                                            targets[self.attrs[i]])
+            val_loss = getattr(self, f"val_loss_{self.attrs[i]}")(
+                losses[self.attrs[i]]
+            )
+            val_acc = getattr(self, f"val_acc_{self.attrs[i]}")(preds[self.attrs[i]], targets[self.attrs[i]])
             getattr(self, "val_acc")(val_acc)
             getattr(self, "val_loss")(val_loss)
             self.log(
@@ -240,6 +241,7 @@ class FaceLitModule(LightningModule):
                 on_epoch=True,
                 prog_bar=True,
             )
+
         self.cur_val = getattr(self, "val_acc").compute()
         self.log(
             "val/acc",
@@ -274,18 +276,15 @@ class FaceLitModule(LightningModule):
             labels.
         :param batch_idx: The index of the current batch.
         """
-        loss, preds, targets = self.model_step(batch)
+        losses, preds, targets = self.model_step(batch)
+
         for i in range(self.hparams.num_heads):
-            # breakpoint()
-            getattr(self,
-                    f"test_acc_{self.attrs[i]}")(preds[self.attrs[i]],
-                                                 targets[self.attrs[i]])
-            getattr(self,
-                    f"test_f1_{self.attrs[i]}")(preds[self.attrs[i]],
-                                                targets[self.attrs[i]])
-            getattr(self,
-                    f"test_auroc_{self.attrs[i]}")(preds[self.attrs[i]],
-                                                   targets[self.attrs[i]].long())
+            pred = preds[self.attrs[i]]
+            gt = targets[self.attrs[i]]
+
+            getattr(self, f"test_acc_{self.attrs[i]}")(pred, gt)
+            getattr(self, f"test_f1_{self.attrs[i]}")(pred, gt)
+
             self.log(
                 f"test/acc_{self.attrs[i]}",
                 getattr(self, f"test_acc_{self.attrs[i]}"),
@@ -300,13 +299,16 @@ class FaceLitModule(LightningModule):
                 on_epoch=True,
                 prog_bar=True,
             )
-            self.log(
-                f"test/auroc_{self.attrs[i]}",
-                getattr(self, f"test_auroc_{self.attrs[i]}"),
-                on_step=False,
-                on_epoch=True,
-                prog_bar=True,
-            )
+
+            if i != 2:
+                getattr(self, f"test_auroc_{self.attrs[i]}")(pred, gt.long())
+                self.log(
+                    f"test/auroc_{self.attrs[i]}",
+                    getattr(self, f"test_auroc_{self.attrs[i]}"),
+                    on_step=False,
+                    on_epoch=True,
+                    prog_bar=True,
+                )
 
     def on_test_epoch_end(self) -> None:
         """Lightning hook that is called when a test epoch ends."""
@@ -333,7 +335,9 @@ class FaceLitModule(LightningModule):
 
         :return: A dict containing the configured optimizers and learning-rate schedulers to be used for training.
         """
-        optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
+        optimizer = self.hparams.optimizer(
+            params=self.trainer.model.parameters()
+        )
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)
             return {

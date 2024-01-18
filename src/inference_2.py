@@ -54,7 +54,7 @@ class Predictor:
                                                     "backbone",
                                                     "best.ckpt")
         self.race_head = RaceClassifier(num_of_features=512)
-        self.gender_head = GenderClassifier()
+        self.gender_head = GenderClassifier(output_size=1, num_of_features=512)
         self.age_head = AgeClassifier()
         self.skintone_head = SkintoneClassifier()
         self.emotion_head = EmotionClassifier()
@@ -176,15 +176,17 @@ class Predictor:
             "masked": masked,
         }
         for key in pred.keys():
-            if key != "age":
-                pred[key] = pred[key].cpu().numpy()
+            pred[key] = pred[key].cpu().numpy()
+            if key != "age" and key != "gender":
                 pred[key] = np.argmax(pred[key], axis=1)
                 pred[key] = attrs_dict[key][str(pred[key][0])]
         if "age" in pred.keys():
-            pred["age"] = pred["age"].cpu().numpy()
             pred["age"] = np.round(pred["age"])
             pred["age"] = np.sum(pred["age"], axis=1).astype(int)
             pred["age"] = attrs_dict["age"][str(pred["age"][0])]
+        if "gender" in pred.keys():
+            pred["gender"] = np.round(pred["gender"]).astype(int)
+            pred["gender"] = attrs_dict["gender"][str(pred["gender"])]
         return pred
 
     def model_predict_batchs(self, model, batchs):

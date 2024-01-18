@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from timm import create_model
-from .backbones import InceptionResnetV1
+from .backbones import InceptionResnetV1, create_vgg_face_dag
 
 
 class BackboneMaker(nn.Module):
@@ -28,6 +28,10 @@ class BackboneMaker(nn.Module):
             self.backbone = InceptionResnetV1(
                 pretrained=self.pretrained,
                 checkpoint_path=self.checkpoint_path)
+        elif self.name == "vgg":
+            self.backbone = create_vgg_face_dag(
+                weights_path=self.checkpoint_path
+            )
         else:
             self.backbone = create_model(
                 self.name,

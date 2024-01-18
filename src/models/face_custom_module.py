@@ -26,7 +26,6 @@ class FaceCustomLitModule(LightningModule):
         scheduler: torch.optim.lr_scheduler,
         compile: bool,
         criterion: torch.nn.Module,
-        # num_classes: Dict[int, int, int, int, int, int],
         attributes,
         checkpoint_dir: str
     ) -> None:
@@ -191,7 +190,7 @@ class FaceCustomLitModule(LightningModule):
         """Lightning hook that is called when training begins."""
         # by default lightning executes validation step sanity checks before training starts,
         # so it's worth to make sure validation metrics don't store results from these checks
-        for i, attr in enumerate(self.attrs):
+        for attr in self.attrs.keys():
             getattr(self, f"val_acc_{attr}").reset()
             getattr(self, f"val_loss_{attr}").reset()
 
@@ -234,6 +233,9 @@ class FaceCustomLitModule(LightningModule):
             #         f"train_acc_{attr}")(pred[attr],
             #                              y[attr])
             losses[attr] = loss
+        for attr in self.attrs.keys():
+            if attr not in ["age", "gender", "masked"]:
+                pred[attr] = torch.argmax(pred[attr], dim=1)
         return losses, pred, y
 
     def training_step(
@@ -248,20 +250,19 @@ class FaceCustomLitModule(LightningModule):
         """
         losses, preds, targets = self.model_step(batch)
         for attr in self.attrs.keys():
-            getattr(self, f"train_loss_{attr}").update(losses[attr])
-            train_acc = getattr(self,
-                                f"train_acc_{attr}")(preds[attr],
-                                                     targets[attr])
+            getattr(self, f"train_loss_{attr}")(losses[attr])
+            getattr(self, f"train_acc_{attr}")(preds[attr],
+                                               targets[attr])
             self.log(
                 f"train/loss_{attr}",
-                getattr(self, f"train_loss_{attr}").compute(),
+                getattr(self, f"train_loss_{attr}"),
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
                 )
             self.log(
                 f"train/acc_{attr}",
-                train_acc,
+                getattr(self, f"train_acc_{attr}"),
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
@@ -286,45 +287,50 @@ class FaceCustomLitModule(LightningModule):
             labels.
         :param batch_idx: The index of the current batch.
         """
-        loss, preds, targets = self.model_step(batch)
+        losses, preds, targets = self.model_step(batch)
+        val_acc_attr = 0
+        val_loss_attr = 0
         for attr in self.attrs.keys():
-            val_loss = loss[attr]
-            val_acc = getattr(
+            val_loss_attr = losses[attr]
+            val_acc_attr = getattr(
                 self,
                 f"val_acc_{attr}")(preds[attr],
                                    targets[attr])
-            self.val_acc.update(val_acc)
-            self.log(
-                f"val/loss_{attr}",
-                val_loss,
-                on_step=False,
-                on_epoch=True,
-                prog_bar=True,
-            )
+            self.val_acc.update(val_acc_attr)
+            self.val_loss.update(val_loss_attr)
+            # self.log(
+            #     f"val/loss_{attr}",
+            #     val_loss,
+            #     on_step=False,
+            #     on_epoch=True,
+            #     prog_bar=True,
+            # )
             self.log(
                 f"val/acc_{attr}",
-                val_acc,
+                val_acc_attr,
                 on_step=False,
                 on_epoch=True,
                 prog_bar=True,
             )
-            self.val_loss.update(val_loss)
         self.log(
             "val/acc",
             self.val_acc.compute(),
-            sync_dist=True,
+            on_step=False,
+            on_epoch=True,
             prog_bar=True,
         )
         self.log(
             "val/loss",
             self.val_loss.compute(),
-            sync_dist=True,
+            on_step=False,
+            on_epoch=True,
             prog_bar=True,
         )
 
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
         self.cur_val = self.val_acc.compute()
+
         if self.val_acc >= self.val_acc_best.compute():
             for attr in self.attrs.keys():
                 torch.save(
@@ -337,7 +343,7 @@ class FaceCustomLitModule(LightningModule):
                 self.backbone.state_dict(),
                 join(self.checkpoint_dir, "backbone", "best.ckpt")
                 )
-        self.val_acc_best.update(self.cur_val)
+        self.val_acc_best(self.cur_val)
         self.log(
             "val/acc_best",
             self.val_acc_best.compute(),
@@ -374,9 +380,9 @@ class FaceCustomLitModule(LightningModule):
             getattr(self,
                     f"test_f1_{attr}")(preds[attr],
                                        targets[attr])
-            getattr(self,
-                    f"test_auroc_{attr}")(preds[attr],
-                                          targets[attr].long())
+            # getattr(self,
+            #         f"test_auroc_{attr}")(preds[attr],
+            #                               targets[attr].long())
             self.log(
                 f"test/acc_{attr}",
                 getattr(self, f"test_acc_{attr}"),
@@ -391,13 +397,13 @@ class FaceCustomLitModule(LightningModule):
                 on_epoch=True,
                 prog_bar=True,
             )
-            self.log(
-                f"test/auroc_{attr}",
-                getattr(self, f"test_auroc_{attr}"),
-                on_step=False,
-                on_epoch=True,
-                prog_bar=True,
-            )
+            # self.log(
+            #     f"test/auroc_{attr}",
+            #     getattr(self, f"test_auroc_{attr}"),
+            #     on_step=False,
+            #     on_epoch=True,
+            #     prog_bar=True,
+            # )
 
     def on_test_epoch_end(self) -> None:
         """Lightning hook that is called when a test epoch ends."""

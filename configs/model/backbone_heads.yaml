@@ -23,7 +23,7 @@ backbone:
   _target_: src.models.components.backbone_maker.BackboneMaker
   name: resnet50 # timm format
   pretrained: true
-  checkpoint_path: /media/gnort/HDD6/Downloads_New/Compress/archive/resnet50_ft_dag.pth
+  checkpoint_path:  #/media/gnort/HDD6/Downloads_New/Compress/archive/resnet50_ft_dag.pth
 
 age_head:
   _target_: src.models.components.age_classifier.AgeClassifier 
