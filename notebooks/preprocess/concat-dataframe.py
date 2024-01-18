@@ -2,8 +2,11 @@
 import pandas as pd
 from pathlib import Path
 
+root_dir = Path(__file__).parent.parent.parent
+print(root_dir)
+
 # %%
-data_dir = Path("../../data/interim")
+data_dir = root_dir / "data/interim"
 
 # %%
 df = pd.read_csv(str(data_dir / "labels.csv"))
