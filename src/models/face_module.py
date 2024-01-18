@@ -55,7 +55,7 @@ class FaceLitModule(LightningModule):
         # loss function
         # metric objects for calculating and averaging accuracy across batches
         for i in range(self.hparams.num_heads):
-            if num_classes[i] != 1:
+            if attributes[i] != "age":
                 setattr(
                     self,
                     f"criterion_{self.attrs[i]}",
@@ -162,7 +162,7 @@ class FaceLitModule(LightningModule):
         losses = {}
 
         for i in range(self.hparams.num_heads):
-            if self.hparams.num_classes[i] == 1:
+            if self.hparams.attributes[i] == "age":
                 preds[self.attrs[i]] = preds[self.attrs[i]].float().squeeze()
                 ys[self.attrs[i]] = ys[self.attrs[i]].float()
 
@@ -300,7 +300,7 @@ class FaceLitModule(LightningModule):
                 prog_bar=True,
             )
 
-            if self.hparams.num_classes[i] != 1:
+            if self.hparams.attributes[i] != "age":
                 getattr(self, f"test_auroc_{self.attrs[i]}")(pred, gt.long())
                 self.log(
                     f"test/auroc_{self.attrs[i]}",
