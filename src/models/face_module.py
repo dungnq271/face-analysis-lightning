@@ -162,7 +162,7 @@ class FaceLitModule(LightningModule):
         losses = {}
 
         for i in range(self.hparams.num_heads):
-            if i in [1, 2, self.hparams.num_heads - 1]:
+            if self.hparams.num_classes[i] == 1:
                 preds[self.attrs[i]] = preds[self.attrs[i]].float().squeeze()
                 ys[self.attrs[i]] = ys[self.attrs[i]].float()
 
@@ -300,7 +300,7 @@ class FaceLitModule(LightningModule):
                 prog_bar=True,
             )
 
-            if i != 2:
+            if self.hparams.num_classes[i] != 1:
                 getattr(self, f"test_auroc_{self.attrs[i]}")(pred, gt.long())
                 self.log(
                     f"test/auroc_{self.attrs[i]}",
