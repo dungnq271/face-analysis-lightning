@@ -55,7 +55,7 @@ class FaceLitModule(LightningModule):
         # loss function
         # metric objects for calculating and averaging accuracy across batches
         for i in range(self.hparams.num_heads):
-            if i not in [1, 2, num_heads-1]:
+            if num_classes[i] != 1:
                 setattr(
                     self,
                     f"criterion_{self.attrs[i]}",
