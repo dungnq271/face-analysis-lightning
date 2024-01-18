@@ -21,7 +21,7 @@ net:
   age_output_size: 6
   skintone_output_size: 4
   emotion_output_size: 7
-  masked_output_size: 1
+  masked_output_size: 2
 
 # load pretrained weight
 pretrained: "checkpoints/best_resnet_101_student_e56.pth"
@@ -29,6 +29,6 @@ pretrained: "checkpoints/best_resnet_101_student_e56.pth"
 # compile model for faster training with pytorch 2.0
 compile: false
 
-num_classes: [3, 2, 6, 4, 7, 1] #race, gender, age, skintone, emotions, masked
+num_classes: [3, 2, 6, 4, 7, 2] #race, gender, age, skintone, emotions, masked
 num_heads: 6
 attributes: ["race", "gender", "age", "skintone", "emotion", "masked"]
