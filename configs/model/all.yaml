@@ -16,7 +16,7 @@ scheduler:
 net:
   _target_: src.models.components.face_attrs_classifier.FaceAttrsClassifier  
   backbone: resnet50
-  race_output_size: 4
+  race_output_size: 3
   gender_output_size: 2
   age_output_size: 6
   skintone_output_size: 4
@@ -27,8 +27,8 @@ net:
 pretrained: "checkpoints/best_resnet_101_student_e56.pth"
 
 # compile model for faster training with pytorch 2.0
-compile: true
+compile: false
 
-num_classes: [4, 2, 6, 4, 7, 1] #race, gender, age, skintone, emotions, masked
+num_classes: [3, 2, 6, 4, 7, 1] #race, gender, age, skintone, emotions, masked
 num_heads: 6
 attributes: ["race", "gender", "age", "skintone", "emotion", "masked"]
