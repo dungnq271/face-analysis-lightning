@@ -230,6 +230,7 @@ if __name__ == "__main__":
     elif args.image_dir:
         preds = model_predict_img_dir(model, args.image_dir, transforms, args.batch_size)
         df = dict2csv(preds, args.csv, args.existing_csv, args.name2id_json)
+        print(len(df))
         df.to_csv(args.csv, index=False)
         print("Predictions saved in {}".format(args.csv))        
     else:
