@@ -22,6 +22,7 @@ net:
   skintone_output_size: 4
   emotion_output_size: 7
   masked_output_size: 2
+  dynamic_weights_loss: true
 
 # load pretrained weight
 pretrained: "checkpoints/best_resnet_101_student_e56.pth"
