@@ -28,9 +28,12 @@ class FaceAttrsClassifier(nn.Module):
         :param output_size: The number of output features of the final linear layer.
         """
         super().__init__()
-        if "dino" in backbone:
-            self.feature_extractor = torch.hub.load('facebookresearch/dino:main', backbone)
+        if "dinov2" in backbone:
+            self.feature_extractor = torch.hub.load('facebookresearch/dinov2', backbone)
             num_filters = self.feature_extractor.blocks[-1].mlp.fc2.out_features
+        elif "dino" in backbone:
+            self.feature_extractor = torch.hub.load('facebookresearch/dino:main', backbone)
+            num_filters = self.feature_extractor.blocks[-1].mlp.fc2.out_features            
         elif "resnet" in backbone:
             if backbone == "resnet50":
                 backbone = models.resnet50(weights="DEFAULT")

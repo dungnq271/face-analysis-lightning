@@ -19,7 +19,9 @@ seed: 12345
 
 data:
   num_workers: 4
-  batch_size: 2
+  batch_size: 16
+  image_size: 224
+  crop_size: 224
 
 trainer:
   accelerator: gpu

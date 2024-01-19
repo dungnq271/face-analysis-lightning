@@ -6,7 +6,7 @@
 defaults:
   - override /paths: default
   - override /data: all
-  - override /model: dino.yaml
+  - override /model: dino
   - override /callbacks: default
   - override /trainer: gpu
   - override /logger: wandb
@@ -26,6 +26,8 @@ data:
   image_train_list: ${paths.data_dir}/image_lists_full/image_lists_full/train.txt
   image_test_list: ${paths.data_dir}/image_lists_full/image_lists_full/test.txt
   batch_size: 64
+  image_size: 224
+  crop_size: 224  
 
 trainer:
   accelerator: gpu
