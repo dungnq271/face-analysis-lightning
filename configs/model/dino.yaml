@@ -1,0 +1,36 @@
+_target_: src.models.face_module.FaceLitModule
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.001
+  weight_decay: 0.0
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  mode: min
+  factor: 0.1
+  patience: 10
+
+net:
+  _target_: src.models.components.face_attrs_classifier.FaceAttrsClassifier  
+  backbone: dino_vitb8
+  race_output_size: 3
+  gender_output_size: 2
+  age_output_size: 6
+  skintone_output_size: 4
+  emotion_output_size: 7
+  masked_output_size: 2
+  dynamic_weights_loss: false
+
+# load pretrained weight
+# pretrained: "checkpoints/best_resnet_101_student_e56.pth"
+pretrained: null
+
+# compile model for faster training with pytorch 2.0
+compile: false
+
+num_classes: [3, 2, 6, 4, 7, 2] #race, gender, age, skintone, emotions, masked
+num_heads: 6
+attributes: ["race", "gender", "age", "skintone", "emotion", "masked"]

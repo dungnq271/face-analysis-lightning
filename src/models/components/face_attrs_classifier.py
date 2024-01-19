@@ -28,19 +28,17 @@ class FaceAttrsClassifier(nn.Module):
         :param output_size: The number of output features of the final linear layer.
         """
         super().__init__()
-        if backbone == "resnet50":
-            self.backbone = models.resnet50(weights="DEFAULT")
-        elif backbone == "resnet101":
-            self.backbone = models.resnet101(weights="DEFAULT")
-        num_filters = self.backbone.fc.in_features
-
-        # Freeze the backbone
-        # for param in self.backbone.parameters():
-        #     param.requires_grad = False
-        # for param in self.backbone.fc.parameters():
-        #     param.requires_grad = True
-        layers = list(self.backbone.children())[:-1]
-        self.feature_extractor = nn.Sequential(*layers)
+        if "dino" in backbone:
+            self.feature_extractor = torch.hub.load('facebookresearch/dino:main', backbone)
+            num_filters = self.feature_extractor.blocks[-1].mlp.fc2.out_features
+        elif "resnet" in backbone:
+            if backbone == "resnet50":
+                backbone = models.resnet50(weights="DEFAULT")
+            elif backbone == "resnet101":
+                backbone = models.resnet101(weights="DEFAULT")
+            num_filters = backbone.fc.in_features
+            layers = list(backbone.children())[:-1]
+            self.feature_extractor = nn.Sequential(*layers)
 
         # use the pretrained model
         self.race_classifier = nn.Linear(num_filters, race_output_size)
@@ -77,11 +75,11 @@ class FaceAttrsClassifier(nn.Module):
         emotion_pred = self.softmax(emotion_pred)
         masked_pred = self.softmax(masked_pred)
 
-        loss_weights_pred = 0.0
-        if self.dynamic_weights_loss:
-            loss_weights_pred = self.softmax(self.loss_weight_fc(representations)).mean(dim=0)
+        # loss_weights_pred = 0.0
+        # if self.dynamic_weights_loss:
+        #     loss_weights_pred = self.softmax(self.loss_weight_fc(representations)).mean(dim=0)
 
-        return race_pred, gender_pred, age_pred, skintone_pred, emotion_pred, masked_pred, loss_weights_pred
+        return race_pred, gender_pred, age_pred, skintone_pred, emotion_pred, masked_pred
 
 
 if __name__ == "__main__":
