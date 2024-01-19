@@ -71,7 +71,7 @@ class FaceAttrsClassifier(nn.Module):
         masked_pred = self.masked_classifier(representations)
 
         race_pred = self.softmax(race_pred)
-        gender_pred = torch.sigmoid(gender_pred)
+        gender_pred = self.softmax(gender_pred)
         age_pred = torch.sigmoid(age_pred)
         skintone_pred = self.softmax(skintone_pred)
         emotion_pred = self.softmax(emotion_pred)
