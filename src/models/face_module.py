@@ -265,7 +265,7 @@ class FaceLitModule(LightningModule):
         getattr(self, "val_acc")(val_acc_all)
 
         self.log(
-            "val/acc_all",
+            "val/acc",
             val_acc_all,
             sync_dist=True,
             prog_bar=True,
