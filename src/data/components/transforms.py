@@ -6,6 +6,7 @@ def get_img_trans(
     phase,
     image_size=256,
     crop_size=224,
+    p_crop=1.,
     mean=(0.485, 0.456, 0.406),
     std=(0.229, 0.224, 0.225),
 ):
@@ -14,7 +15,7 @@ def get_img_trans(
         return A.Compose(
             [
                 A.Resize(image_size, image_size),
-                A.RandomCrop(crop_size, crop_size),
+                A.RandomCrop(crop_size, crop_size, p=p_crop),
                 A.HorizontalFlip(),
                 normalize,
                 ToTensor(),
@@ -24,7 +25,7 @@ def get_img_trans(
         return A.Compose(
             [
                 A.Resize(image_size, image_size),
-                A.CenterCrop(crop_size, crop_size),
+                A.CenterCrop(crop_size, crop_size, p=p_crop),
                 normalize,
                 ToTensor(),
             ]
