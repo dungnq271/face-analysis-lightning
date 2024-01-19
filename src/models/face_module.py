@@ -1,6 +1,7 @@
 import os.path as osp
 import logging
 from typing import Any, Dict, Tuple
+from icecream import ic
 
 import torch
 from lightning import LightningModule
@@ -48,7 +49,8 @@ class FaceLitModule(LightningModule):
             pretrained_state_dict = torch.load(pretrained)
             state_dict = self.net.state_dict()
             load_pretrained(state_dict, pretrained_state_dict)
-        
+
+        self.dynamic_weights_loss = self.net.dynamic_weights_loss
         self.attrs = attributes
         self.cur_val = 0
 
@@ -59,7 +61,8 @@ class FaceLitModule(LightningModule):
                 setattr(
                     self,
                     f"criterion_{self.attrs[i]}",
-                    torch.nn.CrossEntropyLoss(),
+                    # torch.nn.CrossEntropyLoss(reduction=("none" if self.dynamic_weights_loss else "mean")),
+                    torch.nn.CrossEntropyLoss(),                    
                 )
                 setattr(
                     self,
@@ -90,7 +93,8 @@ class FaceLitModule(LightningModule):
                     AUROC(task="multiclass", num_classes=num_classes[i]),
                 )
             else:
-                setattr(self, f"criterion_{self.attrs[i]}", torch.nn.BCELoss())
+                # setattr(self, f"criterion_{self.attrs[i]}", torch.nn.BCELoss(reduction=("none" if self.dynamic_weights_loss else "mean")))
+                setattr(self, f"criterion_{self.attrs[i]}", torch.nn.BCELoss())                
                 setattr(
                     self,
                     f"train_acc_{self.attrs[i]}",
@@ -202,9 +206,15 @@ class FaceLitModule(LightningModule):
             )
 
         # return loss or backpropagation will fail
+        losses = torch.stack(list(losses.values()))
         if self.hparams.num_heads > 1:
-            loss_mean = torch.stack(list(losses.values())).mean()
-        return loss_mean
+            if self.dynamic_weights_loss:
+                # ic(losses.shape, preds["loss_weights"].shape)
+                dynamic_weights_loss = (preds["loss_weights"] / losses).sum()
+                loss_final = (losses * preds["loss_weights"]).sum() + dynamic_weights_loss
+            else:
+                loss_final = losses.mean()
+        return loss_final
 
     def on_train_epoch_end(self) -> None:
         "Lightning hook that is called when a training epoch ends."
