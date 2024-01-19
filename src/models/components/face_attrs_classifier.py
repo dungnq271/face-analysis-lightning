@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -49,51 +51,38 @@ class FaceAttrsClassifier(nn.Module):
         self.emotion_classifier = nn.Linear(num_filters, emotion_output_size)
         self.masked_classifier = nn.Linear(num_filters, masked_output_size)
         self.softmax = nn.Softmax(dim=1)
-        self.sigmoid = nn.Sigmoid()
 
         self.dynamic_weights_loss = dynamic_weights_loss
         if dynamic_weights_loss:
             self.loss_weight_fc = nn.Linear(num_filters, 6)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Perform a single forward pass through the network.
 
         :param x: The input tensor.
         :return: A tensor of predictions.
         """
-        self.feature_extractor.eval()
-        with torch.no_grad():
-            representations = self.feature_extractor(x).flatten(1)
+        representations = self.feature_extractor(x).flatten(1)
 
-        # x = self.classifier(representations)
         race_pred = self.race_classifier(representations)
         gender_pred = self.gender_classifier(representations)
         age_pred = self.age_classifier(representations)
         skintone_pred = self.skintone_classifier(representations)
         emotion_pred = self.emotion_classifier(representations)
-        maksed_pred = self.masked_classifier(representations)
+        masked_pred = self.masked_classifier(representations)
 
         race_pred = self.softmax(race_pred)
-        gender_pred = self.sigmoid(gender_pred)
-        age_pred = self.sigmoid(age_pred)
+        gender_pred = F.sigmoid(gender_pred)
+        age_pred = F.sigmoid(age_pred)
         skintone_pred = self.softmax(skintone_pred)
         emotion_pred = self.softmax(emotion_pred)
-        maksed_pred = self.sigmoid(maksed_pred)
+        masked_pred = self.softmax(masked_pred)
 
+        loss_weights_pred = 0.0
         if self.dynamic_weights_loss:
             loss_weights_pred = self.softmax(self.loss_weight_fc(representations)).mean(dim=0)
 
-        pred = {
-            "race": race_pred,
-            "gender": gender_pred,
-            "age": age_pred,
-            "skintone": skintone_pred,
-            "emotion": emotion_pred,
-            "masked": maksed_pred,
-            "loss_weights": (loss_weights_pred if self.dynamic_weights_loss else None)
-        }
-
-        return pred
+        return race_pred, gender_pred, age_pred, skintone_pred, emotion_pred, masked_pred, loss_weights_pred
 
 
 if __name__ == "__main__":
