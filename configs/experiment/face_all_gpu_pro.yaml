@@ -19,7 +19,7 @@ tags: ["face_all", "face_all_classifier"]
 seed: 12345
 
 paths:
-  data_dir: ${paths.root_dir}/face_challenge_dataset/
+  data_dir: ${paths.root_dir}/face_challenge_dataset
   
 data:
   num_workers: 8
