@@ -164,5 +164,7 @@ pl-hydra
 dataset
 drawio
 data/*
+public_test/
+answer*
 
 !data/interim/image_lists/*
