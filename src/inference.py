@@ -188,7 +188,8 @@ def dict2csv(preds, csv_path, existing_csv_path, name2id_json_path):
     ]
     name2id = json.load(open(name2id_json_path, 'r'))
     df_existing = pd.read_csv(existing_csv_path)
-    df_existing["face_file_name"] = [str(i+1) + ".jpg" for i in range(len(df_existing))]
+    if "face_file_name" not in df_existing.columns.tolist():
+        df_existing["face_file_name"] = [str(i+1) + ".jpg" for i in range(len(df_existing))]
     df_existing = df_existing.drop(columns=cols)
     df = pd.DataFrame.from_dict(preds, orient="index")
     df = df_existing.merge(df, left_on="face_file_name", right_on="face_file_name")
