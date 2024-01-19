@@ -19,6 +19,7 @@ class FaceAttrsClassifier(nn.Module):
         skintone_output_size: int = 4,
         emotion_output_size: int = 7,
         masked_output_size: int = 2,
+        dynamic_weights_loss: bool = False
     ) -> None:
         """Initialize a `ColorClassifier` module.
 
@@ -50,6 +51,10 @@ class FaceAttrsClassifier(nn.Module):
         self.softmax = nn.Softmax(dim=1)
         self.sigmoid = nn.Sigmoid()
 
+        self.dynamic_weights_loss = dynamic_weights_loss
+        if dynamic_weights_loss:
+            self.loss_weight_fc = nn.Linear(num_filters, 6)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform a single forward pass through the network.
 
@@ -75,6 +80,9 @@ class FaceAttrsClassifier(nn.Module):
         emotion_pred = self.softmax(emotion_pred)
         maksed_pred = self.sigmoid(maksed_pred)
 
+        if self.dynamic_weights_loss:
+            loss_weights_pred = self.softmax(self.loss_weight_fc(representations)).mean(dim=0)
+
         pred = {
             "race": race_pred,
             "gender": gender_pred,
@@ -82,6 +90,7 @@ class FaceAttrsClassifier(nn.Module):
             "skintone": skintone_pred,
             "emotion": emotion_pred,
             "masked": maksed_pred,
+            "loss_weights": (loss_weights_pred if self.dynamic_weights_loss else None)
         }
 
         return pred
