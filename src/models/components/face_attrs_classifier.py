@@ -2,7 +2,6 @@ from typing import Tuple
 
 import torch
 from torch import nn
-import torch.nn.functional as F
 
 from . import backbones as B
 from .utils import get_named_function
@@ -72,8 +71,8 @@ class FaceAttrsClassifier(nn.Module):
         masked_pred = self.masked_classifier(representations)
 
         race_pred = self.softmax(race_pred)
-        gender_pred = F.sigmoid(gender_pred)
-        age_pred = F.sigmoid(age_pred)
+        gender_pred = torch.sigmoid(gender_pred)
+        age_pred = torch.sigmoid(age_pred)
         skintone_pred = self.softmax(skintone_pred)
         emotion_pred = self.softmax(emotion_pred)
         masked_pred = self.softmax(masked_pred)
