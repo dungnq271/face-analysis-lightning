@@ -64,11 +64,17 @@ python src/train.py trainer=gpu
 Train model with chosen experiment configuration from [configs/experiment/](configs/experiment/)
 
 ```bash
-python src/train.py experiment=experiment_1.yaml
+python src/train.py experiment=face_all_gpu_pro.yaml
 ```
 
 You can override any parameter from command line like this
 
 ```bash
 python src/train.py trainer.max_epochs=20 data.batch_size=64
+```
+
+## Inferene
+Getting the csv file from [Alignment Result of YOLOv7](https://github.com/dungnq271/yolov7)
+```
+$ ./scripts/inference_img_dir.sh
 ```
